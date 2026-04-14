@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Division 7A Calculator — Affinity</title>
+<link rel="stylesheet" href="../assets/affinity.css">
+</head>
+<body>
+<script src="../assets/sidebar.js"></script>
+<script>injectSidebar('div7a.html');</script>
+<div class="layout"><div class="main">
+<div class="page-header">
+  <div class="page-header-icon">📋</div>
+  <div class="page-header-text"><h1>Division 7A Loan Calculator</h1><p>Calculate minimum yearly repayments and generate a full year-by-year Div 7A loan schedule.</p></div>
+  <div style="margin-left:auto" class="btn-group">
+    <button class="btn btn-secondary btn-sm" onclick="exportCSV('scheduleTable','div7a-schedule')">⬇ Export CSV</button>
+    <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Print / PDF</button>
+  </div>
+</div>
+<div class="page-body">
+<div class="tool-layout">
+  <div>
+    <div class="card">
+      <div class="card-title">Loan Details</div>
+      <div class="form-group"><label>Shareholder / Borrower Name</label><input type="text" id="borrower" placeholder="e.g. John Smith"></div>
+      <div class="form-group"><label>Private Company (Lender)</label><input type="text" id="lender" placeholder="e.g. Smith Holdings Pty Ltd"></div>
+      <div class="form-group"><label>Loan Amount ($) <span class="required">*</span></label><div class="input-prefix"><span>$</span><input type="number" id="loanAmt" placeholder="0" oninput="calc()"></div></div>
+      <div class="form-group">
+        <label>Loan Commencement Date <span class="required">*</span></label>
+        <input type="date" id="loanDate" oninput="calc()">
+        <div class="form-hint">Date loan was made — typically 30 June of year income was derived</div>
+      </div>
+      <div class="form-group">
+        <label>Loan Type <span class="required">*</span></label>
+        <select id="loanType" onchange="calc()">
+          <option value="7">7-year unsecured loan</option>
+          <option value="25">25-year loan (secured by mortgage over real property)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>First Income Year</label>
+        <select id="firstYear" onchange="calc()">
+          <option value="2026">2025–26</option>
+          <option value="2025">2024–25</option>
+          <option value="2024">2023–24</option>
+          <option value="2023">2022–23</option>
+          <option value="2022">2021–22</option>
+        </select>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Benchmark Interest Rates (ATO Published)</div>
+      <div id="rateInputs"></div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <div class="card-title">Summary</div>
+      <div class="result-box">
+        <div class="result-row"><span class="result-label">Year 1 Minimum Yearly Repayment</span><span class="result-value highlight" id="rMYR">—</span></div>
+        <div class="result-row"><span class="result-label">Loan Amount</span><span class="result-value" id="rLoan">—</span></div>
+        <div class="result-row"><span class="result-label">Loan Term</span><span class="result-value" id="rTerm">—</span></div>
+        <div class="result-row"><span class="result-label">Total Interest</span><span class="result-value" id="rInterest">—</span></div>
+        <div class="result-row"><span class="result-label">Year 1 Rate</span><span class="result-value" id="rRate">—</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Division 7A Loan Schedule</div>
+      <div class="table-wrapper">
+        <table class="data-table" id="scheduleTable">
+          <thead><tr><th>Year</th><th>Opening ($)</th><th>Rate</th><th>Interest ($)</th><th>MYR ($)</th><th>Closing ($)</th><th>MYR Met?</th></tr></thead>
+          <tbody id="schedBody"><tr><td colspan="7" class="text" style="text-align:center;color:var(--text-muted);padding:24px">Enter loan details to generate schedule</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">ATO Benchmark Interest Rate History</div>
+      <table class="data-table">
+        <thead><tr><th>Year</th><th>Rate</th></tr></thead>
+        <tbody>
+          <tr><td>2025–26</td><td class="highlight">8.77%*</td></tr>
+          <tr><td>2024–25</td><td>8.77%</td></tr>
+          <tr><td>2023–24</td><td>8.27%</td></tr>
+          <tr><td>2022–23</td><td>4.77%</td></tr>
+          <tr><td>2021–22</td><td>4.52%</td></tr>
+          <tr><td>2020–21</td><td>4.52%</td></tr>
+          <tr><td>2019–20</td><td>5.37%</td></tr>
+        </tbody>
+      </table>
+      <div class="form-hint" style="margin-top:8px">*2025–26 rate — verify with ATO before lodgement</div>
+    </div>
+  </div>
+</div>
+<div class="disclaimer"><strong>Important:</strong> A Div 7A loan agreement must be in writing and signed before the company's lodgement date for the year the loan was made. If the MYR is not met in any year, the shortfall may be treated as a deemed dividend. MYR formula: Opening Balance × [r(1+r)^n / ((1+r)^n − 1)]. Always verify benchmark rates with the ATO before finalising client advice.</div>
+</div></div></div>
+<script src="../assets/affinity.js"></script>
+<script>
+const BENCH_RATES = {2026:8.77,2025:8.77,2024:8.27,2023:4.77,2022:4.52,2021:4.52,2020:5.37,2019:5.37};
+function buildRateInputs(firstYear, term) {
+  const container = document.getElementById('rateInputs');
+  container.innerHTML = '';
+  for (let i = 0; i < term; i++) {
+    const y = firstYear + i;
+    const label_y = y + '–' + String(y+1).slice(-2);
+    const defaultRate = BENCH_RATES[y+1] || BENCH_RATES[firstYear] || 8.77;
+    container.innerHTML += `<div class="form-group" style="margin-bottom:10px">
+      <label style="display:flex;justify-content:space-between"><span>${label_y}</span></label>
+      <div class="input-prefix" style="width:120px"><input type="number" id="rate_${y}" value="${defaultRate}" step="0.01" oninput="calc()"><span style="right:10px;left:auto;font-size:0.8rem">%</span></div>
+    </div>`;
+  }
+}
+function calc() {
+  const loan = pf(document.getElementById('loanAmt').value);
+  const term = pi(document.getElementById('loanType').value);
+  const firstYear = pi(document.getElementById('firstYear').value) - 1;
+  if (!loan) { buildRateInputs(firstYear || 2025, term); return; }
+  buildRateInputs(firstYear, term);
+  document.getElementById('rLoan').textContent = fmt(loan);
+  document.getElementById('rTerm').textContent = term + ' years';
+  let balance = loan;
+  let totalInterest = 0;
+  let tbody = '';
+  for (let i = 0; i < term && balance > 0.01; i++) {
+    const y = firstYear + i;
+    const rateEl = document.getElementById('rate_' + y);
+    const rate = rateEl ? pf(rateEl.value) / 100 : 0.0877;
+    const n = term - i;
+    const myr = balance * (rate * Math.pow(1+rate,n)) / (Math.pow(1+rate,n)-1);
+    const interest = balance * rate;
+    const principal = myr - interest;
+    totalInterest += interest;
+    const closing = Math.max(0, balance - principal);
+    const label_y = y + '–' + String(y+1).slice(-2);
+    if (i === 0) {
+      document.getElementById('rMYR').textContent = fmt(myr);
+      document.getElementById('rRate').textContent = fmtP(rate*100);
+    }
+    tbody += `<tr><td>${label_y}</td><td>${fmt(balance)}</td><td>${fmtP(rate*100)}</td><td>${fmt(interest)}</td><td class="highlight">${fmt(myr)}</td><td>${fmt(closing)}</td><td><span class="badge badge-success">Yes</span></td></tr>`;
+    balance = closing;
+  }
+  document.getElementById('rInterest').textContent = fmt(totalInterest);
+  document.getElementById('schedBody').innerHTML = tbody || '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">No data</td></tr>';
+}
+document.addEventListener('DOMContentLoaded', () => { buildRateInputs(2025, 7); });
+</script>
+</body></html>
