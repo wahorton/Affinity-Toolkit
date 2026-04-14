@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Financial Ratio Analyser — Affinity</title>
+<link rel="stylesheet" href="../assets/affinity.css">
+</head>
+<body>
+<script src="../assets/sidebar.js"></script>
+<script>injectSidebar('financial-ratios.html');</script>
+<div class="layout"><div class="main">
+<div class="page-header">
+  <div class="page-header-icon">📊</div>
+  <div class="page-header-text"><h1>Financial Ratio Analyser</h1><p>Input P&amp;L and balance sheet figures to calculate key financial ratios.</p></div>
+  <div style="margin-left:auto"><button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Print / PDF</button></div>
+</div>
+<div class="page-body">
+<div class="tool-layout">
+  <div>
+    <div class="card">
+      <div class="card-title">Profit &amp; Loss</div>
+      <div class="form-group"><label>Entity / Period</label><input type="text" id="entity" placeholder="e.g. Smith Pty Ltd — FY2024–25"></div>
+      <div class="form-group"><label>Revenue / Sales ($)</label><div class="input-prefix"><span>$</span><input type="number" id="revenue" placeholder="0" oninput="calc()"></div></div>
+      <div class="form-group"><label>Cost of Goods Sold ($)</label><div class="input-prefix"><span>$</span><input type="number" id="cogs" placeholder="0" oninput="calc()"></div></div>
+      <div class="form-group"><label>Gross Profit ($)</label><div class="input-prefix"><span>$</span><input type="number" id="grossProfit" placeholder="Leave blank to auto-calculate" oninput="calc()"></div></div>
+      <div class="form-group"><label>EBIT ($)</label><div class="input-prefix"><span>$</span><input type="number" id="ebit" placeholder="0" oninput="calc()"></div></div>
+      <div class="form-group"><label>EBITDA ($)</label><div class="input-prefix"><span>$</span><input type="number" id="ebitda" placeholder="0" oninput="calc()"></div></div>
+      <div class="form-group"><label>Interest Expense ($)</label><div class="input-prefix"><span>$</span><input type="number" id="interest" placeholder="0" oninput="calc()"></div></div>
+      <div class="form-group"><label>Net Profit After Tax ($)</label><div class="input-prefix"><span>$</span><input type="number" id="npat" placeholder="0" oninput="calc()"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Balance Sheet</div>
+      <div class="form-group"><label>Cash &amp; Equivalents ($)</label><div class="input-prefix"><span>$</span><input type="number" id="cash" placeholder="0" oninput="calc()"></div></div>
+      <div class="form-group"><label>Receivables ($)</label><div class="input-prefix"><span>$</span><input type="number" id="receivables" placeholder="0" oninput="calc()"></div></div>
+      <div class="form-group"><label>Inventory ($)</label><div class="input-prefix"><span>$</span><input type="number" id="inventory" placeholder="0" oninput="calc()"></div></div>
+      <div class="form-group"><label>Other Current Assets ($)</label><div class="input-prefix"><span>$</span><input type="number" id="otherCA" placeholder="0" oninput="calc()"></div></div>
+      <div class="form-group"><label>Total Assets ($)</label><div class="input-prefix"><span>$</span><input type="number" id="totalAssets" placeholder="0" oninput="calc()"></div></div>
+      <div class="form-group"><label>Current Liabilities ($)</label><div class="input-prefix"><span>$</span><input type="number" id="currentLiab" placeholder="0" oninput="calc()"></div></div>
+      <div class="form-group"><label>Total Liabilities ($)</label><div class="input-prefix"><span>$</span><input type="number" id="totalLiab" placeholder="0" oninput="calc()"></div></div>
+      <div class="form-group"><label>Total Equity ($)</label><div class="input-prefix"><span>$</span><input type="number" id="equity" placeholder="Leave blank to auto-calculate" oninput="calc()"></div></div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <div class="card-title">Full Ratio Summary</div>
+      <table class="data-table" id="ratioTable">
+        <thead><tr><th>Category</th><th>Ratio</th><th>Value</th><th>Benchmark</th><th>Interpretation</th></tr></thead>
+        <tbody id="ratioBody"><tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:32px">Enter financials to analyse ratios</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div class="disclaimer">Benchmarks shown are indicative only and vary significantly by industry. A ratio outside the benchmark range is not necessarily cause for concern — context is everything. Always interpret ratios in conjunction with qualitative factors and industry comparisons.</div>
+</div></div></div>
+<script src="../assets/affinity.js"></script>
+<script>
+function g(id) { return pf(document.getElementById(id).value); }
+function fmtR(v, decimals) { if (!isFinite(v) || isNaN(v)) return '—'; return v.toFixed(decimals !== undefined ? decimals : 2) + 'x'; }
+function calc() {
+  const revenue=g('revenue'), cogs=g('cogs'), ebit=g('ebit'), ebitda=g('ebitda'), interest=g('interest'), npat=g('npat');
+  const grossProfit = g('grossProfit') || (revenue - cogs);
+  const cash=g('cash'), receivables=g('receivables'), inventory=g('inventory'), otherCA=g('otherCA');
+  const totalAssets=g('totalAssets'), currentLiab=g('currentLiab'), totalLiab=g('totalLiab');
+  const equity = g('equity') || (totalAssets - totalLiab);
+  const currentAssets = cash + receivables + inventory + otherCA;
+
+  function row(cat, name, val, fmt_fn, benchmark, interp_fn) {
+    const vStr = fmt_fn ? fmt_fn(val) : (isFinite(val) ? val.toFixed(2) : '—');
+    const interp = interp_fn ? interp_fn(val) : '';
+    const cls = interp === 'Good' ? 'positive' : interp === 'Caution' ? 'warning' : interp === 'Concern' ? 'negative' : '';
+    return `<tr><td class="text">${cat}</td><td class="text">${name}</td><td class="highlight">${vStr}</td><td class="text" style="font-size:0.75rem;color:var(--text-muted)">${benchmark}</td><td><span class="badge badge-${cls==='positive'?'success':cls==='warning'?'warning':cls==='negative'?'danger':'neutral'}">${interp||'—'}</span></td></tr>`;
+  }
+
+  if (!revenue && !totalAssets) { document.getElementById('ratioBody').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:32px">Enter financials to analyse ratios</td></tr>'; return; }
+
+  const tbody = [
+    row('Liquidity', 'Current Ratio', currentLiab > 0 ? currentAssets/currentLiab : NaN, fmtR, '1.5x – 3.0x', v => v >= 1.5 && v <= 3 ? 'Good' : v >= 1 ? 'Caution' : 'Concern'),
+    row('Liquidity', 'Quick Ratio', currentLiab > 0 ? (cash+receivables)/currentLiab : NaN, fmtR, '0.8x – 1.5x', v => v >= 0.8 ? 'Good' : v >= 0.5 ? 'Caution' : 'Concern'),
+    row('Profitability', 'Gross Margin', revenue > 0 ? grossProfit/revenue*100 : NaN, v => isFinite(v)?v.toFixed(1)+'%':'—', '30% – 60%', v => v >= 30 ? 'Good' : v >= 15 ? 'Caution' : 'Concern'),
+    row('Profitability', 'Net Profit Margin', revenue > 0 ? npat/revenue*100 : NaN, v => isFinite(v)?v.toFixed(1)+'%':'—', '5% – 20%', v => v >= 10 ? 'Good' : v >= 3 ? 'Caution' : 'Concern'),
+    row('Profitability', 'Return on Assets', totalAssets > 0 ? npat/totalAssets*100 : NaN, v => isFinite(v)?v.toFixed(1)+'%':'—', '>5%', v => v >= 5 ? 'Good' : v >= 0 ? 'Caution' : 'Concern'),
+    row('Profitability', 'Return on Equity', equity > 0 ? npat/equity*100 : NaN, v => isFinite(v)?v.toFixed(1)+'%':'—', '>10%', v => v >= 10 ? 'Good' : v >= 0 ? 'Caution' : 'Concern'),
+    row('Leverage', 'Debt-to-Equity', equity > 0 ? totalLiab/equity : NaN, fmtR, '0.5x – 2.0x', v => v <= 2 ? 'Good' : v <= 3 ? 'Caution' : 'Concern'),
+    row('Leverage', 'Interest Cover', interest > 0 ? ebit/interest : NaN, fmtR, '>3.0x', v => v >= 3 ? 'Good' : v >= 1.5 ? 'Caution' : 'Concern'),
+    row('Efficiency', 'Asset Turnover', totalAssets > 0 ? revenue/totalAssets : NaN, fmtR, '>0.8x', v => v >= 0.8 ? 'Good' : v >= 0.4 ? 'Caution' : 'Concern'),
+  ].join('');
+  document.getElementById('ratioBody').innerHTML = tbody;
+}
+document.addEventListener('DOMContentLoaded', calc);
+</script>
+</body></html>

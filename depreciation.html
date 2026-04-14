@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Company Tax Rate Checker — Affinity</title>
+<link rel="stylesheet" href="../assets/affinity.css">
+</head>
+<body>
+<script src="../assets/sidebar.js"></script>
+<script>injectSidebar('🏢.html');</script>
+<div class="layout">
+  <div class="main">
+    <div class="page-header">
+      <div class="page-header-icon">🏢</div>
+      <div class="page-header-text">
+        <h1>Company Tax Rate Checker</h1>
+        <p>Determine whether a company qualifies as a base rate entity and its applicable tax rate.</p>
+      </div>
+      <div style="margin-left:auto" class="btn-group">
+        
+        <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Print / PDF</button>
+      </div>
+    </div>
+    <div class="page-body">
+<div class="tool-layout">
+  <div class="card">
+    <div class="card-title">Company Details</div>
+    <div class="form-group">
+      <label>Income Year <span class="required">*</span></label>
+      <select id="year" onchange="calc()">
+        <option value="2026">2025–26</option>
+        <option value="2025">2024–25</option>
+        <option value="2024">2023–24</option>
+        <option value="2023">2022–23</option>
+        <option value="2022">2021–22</option>
+        <option value="2021">2020–21</option>
+        <option value="2020">2019–20</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Aggregated Turnover ($) <span class="required">*</span></label>
+      <div class="input-prefix"><span>$</span><input type="number" id="turnover" placeholder="0" oninput="calc()"></div>
+    </div>
+    <div class="form-group">
+      <label>Total Assessable Income ($) <span class="required">*</span></label>
+      <div class="input-prefix"><span>$</span><input type="number" id="assessable" placeholder="0" oninput="calc()"></div>
+      <div class="form-hint">Include all ordinary and statutory income</div>
+    </div>
+    <div class="form-group">
+      <label>Passive Income ($)</label>
+      <div class="input-prefix"><span>$</span><input type="number" id="passive" placeholder="0" oninput="calc()"></div>
+      <div class="form-hint">Dividends, interest, rent, royalties, net capital gains</div>
+    </div>
+    <div class="form-group">
+      <label>Taxable Income ($) <span class="required">*</span></label>
+      <div class="input-prefix"><span>$</span><input type="number" id="taxable" placeholder="0" oninput="calc()"></div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <div class="card-title">Result</div>
+      <div class="result-box">
+        <div class="result-row"><span class="result-label">Applicable Tax Rate</span><span class="result-value highlight" id="rRate">—</span></div>
+        <div class="result-row"><span class="result-label">Entity Type</span><span class="result-value" id="rEntity">—</span></div>
+        <div class="result-row"><span class="result-label">Tax Payable</span><span class="result-value" id="rTax">—</span></div>
+        <div class="result-row"><span class="result-label">After-Tax Income</span><span class="result-value positive" id="rAfter">—</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Base Rate Entity Test</div>
+      <table class="data-table" id="breTable">
+        <thead><tr><th>Test</th><th>Required</th><th>Actual</th><th>Result</th></tr></thead>
+        <tbody id="breBody"><tr><td colspan="4" class="text" style="text-align:center;color:var(--text-muted);padding:24px">Enter company details to calculate</td></tr></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">Historical Rate Reference</div>
+      <table class="data-table">
+        <thead><tr><th>Year</th><th>Threshold</th><th>Base Rate</th><th>General Rate</th></tr></thead>
+        <tbody>
+          <tr><td>2025–26</td><td class="text">Under $50M & passive ≤80%</td><td class="positive">25%</td><td>30%</td></tr>
+          <tr><td>2024–25</td><td class="text">Under $50M & passive ≤80%</td><td class="positive">25%</td><td>30%</td></tr>
+          <tr><td>2023–24</td><td class="text">Under $50M & passive ≤80%</td><td class="positive">25%</td><td>30%</td></tr>
+          <tr><td>2022–23</td><td class="text">Under $50M & passive ≤80%</td><td class="positive">25%</td><td>30%</td></tr>
+          <tr><td>2021–22</td><td class="text">Under $50M & passive ≤80%</td><td class="positive">25%</td><td>30%</td></tr>
+          <tr><td>2020–21</td><td class="text">Under $50M & passive ≤80%</td><td class="positive">26%</td><td>30%</td></tr>
+          <tr><td>2019–20</td><td class="text">Under $50M & passive ≤80%</td><td class="positive">27.5%</td><td>30%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+      <div class="disclaimer">This tool is a guide only. The base rate entity test under s23AA of ITAA 1936 involves additional considerations including corporate beneficiary rules and connected entity aggregation. Verify outcomes against the ATO's current guidance.</div>
+    </div>
+  </div>
+</div>
+<script src="../assets/affinity.js"></script>
+<script>
+
+const RATES = {
+  2026:{threshold:50e6,passive:0.8,base:0.25,gen:0.30},
+  2025:{threshold:50e6,passive:0.8,base:0.25,gen:0.30},
+  2024:{threshold:50e6,passive:0.8,base:0.25,gen:0.30},
+  2023:{threshold:50e6,passive:0.8,base:0.25,gen:0.30},
+  2022:{threshold:50e6,passive:0.8,base:0.25,gen:0.30},
+  2021:{threshold:50e6,passive:0.8,base:0.26,gen:0.30},
+  2020:{threshold:50e6,passive:0.8,base:0.275,gen:0.30}
+};
+function calc() {
+  const year = +document.getElementById('year').value;
+  const turnover = pf(document.getElementById('turnover').value);
+  const assessable = pf(document.getElementById('assessable').value);
+  const passive = pf(document.getElementById('passive').value);
+  const taxable = pf(document.getElementById('taxable').value);
+  const r = RATES[year];
+  if (!turnover && !taxable) return;
+  const passivePct = assessable > 0 ? passive/assessable : 0;
+  const isBRE = turnover < r.threshold && passivePct <= r.passive;
+  const rate = isBRE ? r.base : r.gen;
+  const tax = taxable * rate;
+  document.getElementById('rRate').textContent = fmtP(rate*100,0) + ' (' + (isBRE?'Base Rate':'General Rate') + ')';
+  document.getElementById('rEntity').textContent = isBRE ? 'Base Rate Entity' : 'General Rate Entity';
+  document.getElementById('rTax').textContent = fmt(tax);
+  document.getElementById('rAfter').textContent = fmt(taxable - tax);
+  const passivePctFmt = assessable > 0 ? fmtP(passivePct*100) : '0%';
+  document.getElementById('breBody').innerHTML = `
+    <tr><td class="text">Aggregated Turnover</td><td>Under ${fmt(r.threshold,0)}</td><td>${fmt(turnover,0)}</td><td><span class="badge ${turnover<r.threshold?'badge-success':'badge-danger'}">${turnover<r.threshold?'Pass':'Fail'}</span></td></tr>
+    <tr><td class="text">Passive Income %</td><td>≤ ${fmtP(r.passive*100,0)}</td><td>${passivePctFmt}</td><td><span class="badge ${passivePct<=r.passive?'badge-success':'badge-danger'}">${passivePct<=r.passive?'Pass':'Fail'}</span></td></tr>
+    <tr class="total-row"><td class="text" colspan="3">Base Rate Entity Status</td><td><span class="badge ${isBRE?'badge-success':'badge-danger'}">${isBRE?'Qualifies':'Does Not Qualify'}</span></td></tr>
+  `;
+}
+
+document.addEventListener('DOMContentLoaded', calc);
+</script>
+</body>
+</html>

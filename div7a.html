@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GIC Remission Generator — Affinity</title>
+<link rel="stylesheet" href="../assets/affinity.css">
+<style>
+.gic-layout { display: grid; grid-template-columns: 1fr 420px; gap: 24px; align-items: start; }
+.section-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--blue-bright); color: white;
+  font-size: 0.78rem; font-weight: 700; flex-shrink: 0; margin-right: 10px;
+}
+.section-heading {
+  display: flex; align-items: center;
+  font-size: 0.95rem; font-weight: 700; color: var(--white);
+  margin-bottom: 16px; padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+.group-label {
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--blue-light);
+  margin: 20px 0 12px; padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-light);
+}
+.group-label:first-child { margin-top: 0; }
+
+/* Meter */
+.meter-wrap { margin: 12px 0 8px; }
+.meter-pct {
+  font-size: 2.4rem; font-weight: 700; font-family: var(--font-mono);
+  text-align: center; line-height: 1; margin-bottom: 6px;
+  transition: color 0.4s;
+}
+.meter-label-row {
+  display: flex; justify-content: space-between;
+  font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px;
+}
+.meter-msg {
+  font-size: 0.8rem; line-height: 1.5; margin-top: 10px;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  background: rgba(0,0,0,0.2); color: var(--text-primary);
+}
+
+/* Steps */
+.process-steps { margin-top: 6px; }
+
+/* Generated text */
+.gen-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+/* Warning box */
+.warn-box {
+  background: rgba(251,191,36,0.1); border-left: 3px solid var(--warning);
+  border-radius: var(--radius-sm); padding: 10px 12px;
+  font-size: 0.78rem; color: #fde68a; line-height: 1.5;
+  margin-top: 6px; display: none;
+}
+.warn-box.show { display: block; }
+
+.key-facts-table { font-size: 0.8rem; width: 100%; border-collapse: collapse; }
+.key-facts-table td { padding: 6px 0; vertical-align: top; }
+.key-facts-table td:first-child { color: var(--text-muted); width: 140px; font-size: 0.75rem; padding-right: 12px; }
+.key-facts-table td:last-child { color: var(--white); font-weight: 500; }
+
+.grounds-list { font-size: 0.8rem; }
+.grounds-list li { padding: 4px 0; color: var(--text-primary); }
+.grounds-list li.good::before { content: '✓ '; color: var(--success); }
+.grounds-list li.bad::before  { content: '✗ '; color: var(--danger); }
+
+@media (max-width: 1000px) {
+  .gic-layout { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<script src="../assets/sidebar.js"></script>
+<script>injectSidebar('gic-remission.html');</script>
+
+<div class="layout">
+  <div class="main">
+    <div class="page-header">
+      <div class="page-header-icon">⚖️</div>
+      <div class="page-header-text">
+        <h1>GIC Remission Generator</h1>
+        <p>Build a compelling ATO General Interest Charge remission request, step by step.</p>
+      </div>
+      <div style="margin-left:auto">
+        <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Print / PDF</button>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- Intro alert -->
+      <div class="alert alert-warning" style="margin-bottom:20px">
+        <strong>Important — effective 1 July 2025:</strong> GIC is no longer tax deductible for charges incurred on or after 1 July 2025. Remission is now more valuable than ever. This tool helps you prepare a request under PS LA 2011/12.
+        <br><br>
+        <em>This tool is for GIC remissions only. For Shortfall Interest Charge (SIC) or Failure to Lodge (FTL) penalty remissions, use separate forms.</em>
+      </div>
+
+      <div class="gic-layout">
+
+        <!-- LEFT: Questionnaire -->
+        <div>
+
+          <!-- SECTION 1: Taxpayer Details -->
+          <div class="card">
+            <div class="section-heading"><span class="section-num">A</span>Taxpayer Details</div>
+
+            <div class="form-group">
+              <label>Submitting as <span class="required">*</span>
+                <span class="tooltip-wrap"><i class="tooltip-icon">i</i><span class="tooltip-text">Select whether you are lodging personally or on behalf of a client as their tax agent.</span></span>
+              </label>
+              <select id="submitterType" onchange="calc()">
+                <option value="">— Select —</option>
+                <option value="individual">An individual</option>
+                <option value="soletrader">A sole trader with ABN</option>
+                <option value="business">A business (company/trust/partnership)</option>
+                <option value="agent">Registered tax/BAS agent acting for a client</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Full Name / Entity Name</label>
+              <input type="text" id="taxpayerName" placeholder="e.g. John Smith / Smith Pty Ltd" oninput="calc()">
+            </div>
+
+            <div class="form-group">
+              <label>TFN or ABN <span style="font-weight:400;color:var(--text-muted)">(optional — do not store sensitive data in a browser)</span></label>
+              <input type="text" id="tfnAbn" placeholder="Optional — leave blank if preferred" oninput="calc()">
+            </div>
+
+            <div class="form-group">
+              <label>Contact Phone <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+              <input type="text" id="contactPhone" placeholder="Optional">
+            </div>
+
+            <div class="form-group">
+              <label>Are all tax lodgments up to date? <span class="required">*</span>
+                <span class="tooltip-wrap"><i class="tooltip-icon">i</i><span class="tooltip-text">The ATO generally will not consider a remission while outstanding returns exist.</span></span>
+              </label>
+              <select id="lodgmentsUpToDate" onchange="calc()">
+                <option value="">— Select —</option>
+                <option value="yes">Yes — all lodgments up to date</option>
+                <option value="partial">Partially — some outstanding</option>
+                <option value="no">No — lodgments outstanding</option>
+              </select>
+              <div class="warn-box" id="lodgmentWarn">
+                ⚠️ The ATO generally won't consider a remission while returns are outstanding. Get all lodgments up to date before submitting.
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 2: The Debt -->
+          <div class="card">
+            <div class="section-heading"><span class="section-num">B</span>The Debt</div>
+
+            <div class="form-group">
+              <label>Account type the GIC relates to <span class="required">*</span></label>
+              <select id="accountType" onchange="calc()">
+                <option value="">— Select —</option>
+                <option value="incometax">Income tax</option>
+                <option value="bas">Activity statement (BAS / IAS)</option>
+                <option value="both">Both income tax and activity statement</option>
+                <option value="other">Other — specify below</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Approximate GIC amount <span class="required">*</span></label>
+              <select id="gicAmount" onchange="calc()">
+                <option value="">— Select —</option>
+                <option value="under2500">Under $2,500</option>
+                <option value="2500to10k">$2,500 – $10,000</option>
+                <option value="10kto50k">$10,000 – $50,000</option>
+                <option value="over50k">Over $50,000</option>
+              </select>
+              <div class="form-hint" id="amountHint"></div>
+            </div>
+
+            <div class="form-group">
+              <label>Period(s) the GIC relates to</label>
+              <input type="text" id="gicPeriods" placeholder='e.g. "June quarter 2024", "FY2023–24 income tax"' oninput="calc()">
+            </div>
+
+            <div class="form-group">
+              <label>Has the underlying tax debt been paid? <span class="required">*</span></label>
+              <select id="debtPaid" onchange="calc()">
+                <option value="">— Select —</option>
+                <option value="yes">Yes — paid in full</option>
+                <option value="partial">Partially paid</option>
+                <option value="plan">On a payment plan</option>
+                <option value="no">No — not yet paid</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="planMetGroup" style="display:none">
+              <label>Is the payment plan being met?</label>
+              <select id="planMet" onchange="calc()">
+                <option value="">— Select —</option>
+                <option value="yes">Yes — all instalments up to date</option>
+                <option value="no">No — instalments behind</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- SECTION 3: The Reason -->
+          <div class="card">
+            <div class="section-heading"><span class="section-num">C</span>The Reason <span style="font-size:0.75rem;font-weight:400;color:var(--text-muted);margin-left:6px">— this drives most of the score</span></div>
+
+            <div class="form-group">
+              <label>Primary reason the debt was not paid on time <span class="required">*</span></label>
+              <select id="primaryReason" onchange="calc()">
+                <option value="">— Select best match —</option>
+                <option value="illness">Serious illness or hospitalisation (self or key person)</option>
+                <option value="disaster">Natural disaster (flood, fire, storm, drought)</option>
+                <option value="dv">Family/domestic violence, financial abuse or coercive control</option>
+                <option value="death">Death of a key person (spouse, partner, director)</option>
+                <option value="atodelay">ATO delay (ATO took longer than standard to issue assessment)</option>
+                <option value="mentalhealth">Mental health crisis</option>
+                <option value="theft">Theft of critical property or business records</option>
+                <option value="industrial">Industrial action affecting operations</option>
+                <option value="debtor">Collapse of a major debtor (unforeseen customer insolvency)</option>
+                <option value="advice">Reliance on incorrect third-party advice (accountant/agent error)</option>
+                <option value="thirdparty">Waiting on third-party information required to lodge/pay</option>
+                <option value="hardship">Financial hardship (unexpected, severe — not general cash flow)</option>
+                <option value="cashflow">General cash flow / poor trading conditions</option>
+                <option value="other">Other — describe below</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Describe what happened <span class="required">*</span>
+                <span class="tooltip-wrap"><i class="tooltip-icon">i</i><span class="tooltip-text">Be specific: include dates, what occurred, and how it directly prevented you from paying on time.</span></span>
+              </label>
+              <textarea id="circumstances" rows="5" placeholder="Be specific: include dates, what occurred, and how it directly stopped you from paying on time..." oninput="calc()"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>Was this circumstance within your control? <span class="required">*</span></label>
+              <select id="withinControl" onchange="calc()">
+                <option value="">— Select —</option>
+                <option value="no">No — it was unexpected and outside my control</option>
+                <option value="partial">Partially — some aspects were within my control</option>
+                <option value="yes">Yes, but with unforeseen consequences</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Did you contact the ATO about this?</label>
+              <select id="atoContact" onchange="calc()">
+                <option value="">— Select —</option>
+                <option value="yes">Yes — before or shortly after the due date</option>
+                <option value="professional">No, but I engaged a tax professional</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Steps taken to address the situation promptly</label>
+              <textarea id="stepsToken" rows="3" placeholder='e.g. "Engaged a payment plan on [date]", "Contacted the ATO on [date]", "Sold assets to reduce debt"' oninput="calc()"></textarea>
+            </div>
+          </div>
+
+          <!-- SECTION 4: History & Context -->
+          <div class="card">
+            <div class="section-heading"><span class="section-num">D</span>History &amp; Context</div>
+
+            <div class="form-group">
+              <label>Compliance history over the last 3–5 years <span class="required">*</span></label>
+              <select id="complianceHistory" onchange="calc()">
+                <option value="">— Select —</option>
+                <option value="excellent">Always lodged and paid on time</option>
+                <option value="good">Mostly on time, minor lapses</option>
+                <option value="fair">Some late payments but generally compliant</option>
+                <option value="poor">Significant history of late payments</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Is this a one-off event?</label>
+              <select id="oneOff" onchange="calc()">
+                <option value="">— Select —</option>
+                <option value="yes">Yes — one-off, out of character</option>
+                <option value="no">No — a similar reason has caused late payment before</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Supporting factors (select all that apply)</label>
+              <div class="check-group">
+                <label class="check-item"><input type="checkbox" value="medcert" onchange="calc()"> <span>I have medical certificates or documentation to attach</span></label>
+                <label class="check-item"><input type="checkbox" value="financial" onchange="calc()"> <span>I have financial statements or bank records to support hardship claims</span></label>
+                <label class="check-item"><input type="checkbox" value="taxletter" onchange="calc()"> <span>I have a letter from a registered tax professional</span></label>
+                <label class="check-item"><input type="checkbox" value="disaster" onchange="calc()"> <span>I have evidence of the natural disaster (council letter, insurance claim, etc.)</span></label>
+                <label class="check-item"><input type="checkbox" value="proactive" onchange="calc()"> <span>I engaged with the ATO proactively (called, set up payment plan)</span></label>
+                <label class="check-item"><input type="checkbox" value="disproportionate" onchange="calc()"> <span>The GIC amount has become disproportionate to the original debt</span></label>
+                <label class="check-item"><input type="checkbox" value="vulnerable" onchange="calc()"> <span>I am currently experiencing vulnerability (financial counsellor engaged)</span></label>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /left -->
+
+        <!-- RIGHT: Meter + Steps + Output -->
+        <div>
+
+          <!-- Probability Meter -->
+          <div class="card" style="position:sticky;top:20px">
+            <div class="card-title">Estimated Remission Likelihood</div>
+
+            <div class="meter-wrap">
+              <div class="meter-pct" id="meterPct" style="color:var(--text-muted)">—</div>
+              <div class="meter-label-row"><span>0%</span><span>50%</span><span>95%</span></div>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" id="meterBar" style="width:0%"></div>
+              </div>
+              <div class="meter-msg" id="meterMsg">Complete the questionnaire to see your estimated likelihood.</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Key Facts -->
+            <div class="card-title">Key Facts</div>
+            <table class="key-facts-table">
+              <tr><td>Current GIC rate</td><td>~11.17% p.a. (compounding daily ~0.0306%/day)</td></tr>
+              <tr><td>Tax deductible?</td><td style="color:var(--danger)">No — not deductible from 1 Jul 2025</td></tr>
+              <tr><td>Governing policy</td><td>PS LA 2011/12</td></tr>
+              <tr><td>Form required</td><td>ATO GIC Remission Application (.xlsx)</td></tr>
+              <tr><td>Agent channel</td><td>Practice Mail → Online Services for Agents (from 22 Jan 2026)</td></tr>
+              <tr><td>Phone (individuals)</td><td>13 28 61</td></tr>
+              <tr><td>Phone (businesses)</td><td>13 72 26</td></tr>
+              <tr><td>Mail address</td><td>PO Box 327, Albury NSW 2640</td></tr>
+            </table>
+
+            <div class="divider"></div>
+
+            <!-- Download form -->
+            <a href="https://www.ato.gov.au/api/public/content/a678a3e244264131a16e5760aa0c3fc2?v=09f0ac34"
+               target="_blank" rel="noopener"
+               class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:8px">
+              ⬇ Download ATO Remission Form (.xlsx)
+            </a>
+            <a href="https://www.ato.gov.au/individuals-and-families/your-tax-return/if-you-disagree-with-an-ato-decision/dispute-interest-or-penalties/remission-of-interest-charges/how-to-request-a-remission-of-interest-and-failure-to-lodge-penalties"
+               target="_blank" rel="noopener"
+               class="btn btn-ghost btn-sm" style="width:100%;justify-content:center">
+              ATO Remission Guidance Page ↗
+            </a>
+
+          </div><!-- /sticky card -->
+
+        </div><!-- /right -->
+
+      </div><!-- /gic-layout -->
+
+      <!-- STEP-BY-STEP PROCESS -->
+      <div class="card" style="margin-top:4px">
+        <div class="section-heading"><span class="section-num">2</span>Step-by-Step Submission Process</div>
+
+        <div class="alert alert-info" style="margin-bottom:16px">
+          <strong>Note (from 22 January 2026):</strong> Remission requests from registered tax agents must be submitted using the official ATO XLSX forms via Online Services for Agents (Practice Mail). Phone submission is no longer standard for agents.
+        </div>
+
+        <ol class="step-list">
+          <li>Ensure <strong>all tax lodgments are up to date</strong>. The ATO will generally not consider a remission while returns are outstanding.</li>
+          <li><strong>Download the official ATO GIC Remission Application Form (XLSX)</strong> using the button above. This must be submitted as an Excel (.xlsx) file — no other format is accepted.</li>
+          <li>Complete the XLSX form. <strong>Use the generated text below</strong> (Section 3) to fill in the circumstances/reasons section of the form.</li>
+          <li><strong>Gather supporting evidence</strong> — e.g. medical certificates, insurance/council letters for disasters, financial statements, bank records, court orders, letters from your tax agent.</li>
+          <li><strong>Log in to the appropriate ATO portal:</strong>
+            <ul style="margin-top:6px;padding-left:20px;font-size:0.82rem;line-height:2">
+              <li><strong>Individuals:</strong> Online services for individuals via myGov</li>
+              <li><strong>Businesses / sole traders with ABN:</strong> Online services for business</li>
+              <li><strong>Tax/BAS agents:</strong> Online services for agents → Practice Mail</li>
+            </ul>
+          </li>
+          <li>Open a <strong>new secure mail message</strong>. Select the Topic matching your debt type (e.g. Income Tax). Select Subject: <em>"Remission of general interest charge"</em>.</li>
+          <li>Attach the <strong>completed XLSX form AND your supporting evidence</strong>. One GIC form can cover both income tax and activity statement — do not submit separately.</li>
+          <li>Tick the declaration and send.</li>
+          <li><strong>Phone option</strong> (amounts ≤$2,500 or no online access): Call <strong>13 28 61</strong> (individuals) or <strong>13 72 26</strong> (businesses). Amounts over $2,500 via phone will be escalated — no immediate decision.</li>
+          <li><strong>Mail option</strong> (if online unavailable): Print and mail to <strong>Australian Taxation Office, PO Box 327, Albury NSW 2640</strong>.</li>
+          <li><strong>If declined:</strong> The ATO will write to you explaining the decision. You may submit a new request with additional information. You cannot lodge a formal objection for GIC remission decisions, but may seek judicial review in the Federal Court, or contact the <strong>Inspector-General of Taxation and Taxation Ombudsman</strong> if the decision appears unfair.</li>
+        </ol>
+      </div>
+
+      <!-- GENERATED TEXT -->
+      <div class="card">
+        <div class="section-heading"><span class="section-num">3</span>Generated Remission Statement</div>
+
+        <div class="alert alert-info" id="genAlert">
+          Complete the questionnaire above to generate your remission statement. Required fields: submitter type, lodgment status, account type, GIC amount, primary reason, and a description of circumstances.
+        </div>
+
+        <div id="genTextWrap" style="display:none">
+          <div class="gen-header">
+            <span style="font-size:0.8rem;color:var(--text-muted)">Copy this text into the ATO XLSX form's circumstances section.</span>
+            <div class="btn-group">
+              <button class="btn btn-primary btn-sm" onclick="copyGenText()">📋 Copy to Clipboard</button>
+              <button class="btn btn-ghost btn-sm" onclick="clearForm()">↺ Clear &amp; Start Again</button>
+            </div>
+          </div>
+          <div class="generated-text" id="generatedText"></div>
+          <div class="disclaimer" style="margin-top:12px">
+            This tool provides general guidance only and does not constitute legal or tax advice. The ATO assesses each request on its individual merits. For complex situations or large GIC amounts, consider engaging a registered tax agent or tax lawyer.
+          </div>
+        </div>
+      </div>
+
+      <!-- Grounds Reference -->
+      <div class="card">
+        <div class="section-heading"><span class="section-num">4</span>ATO Remission Grounds Reference</div>
+        <div class="grid-2">
+          <div>
+            <div style="font-size:0.75rem;font-weight:700;color:var(--success);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em">✓ Likely to succeed</div>
+            <ul class="grounds-list">
+              <li class="good">Serious illness or hospitalisation with supporting evidence</li>
+              <li class="good">Natural disaster directly impacting ability to pay</li>
+              <li class="good">Family and domestic violence / financial abuse</li>
+              <li class="good">Death of a spouse, business partner, or sole director</li>
+              <li class="good">ATO-caused delay in issuing an assessment</li>
+              <li class="good">Mental health crisis</li>
+              <li class="good">Theft of critical property or business records</li>
+              <li class="good">Industrial action affecting operations</li>
+              <li class="good">Unforeseen collapse of a major debtor</li>
+              <li class="good">Reliance on incorrect professional advice with severe consequences</li>
+              <li class="good">One-off event, out of pattern with strong compliance history</li>
+            </ul>
+          </div>
+          <div>
+            <div style="font-size:0.75rem;font-weight:700;color:var(--danger);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em">✗ Unlikely to succeed</div>
+            <ul class="grounds-list">
+              <li class="bad">General cash flow problems or poor trading conditions</li>
+              <li class="bad">A creditor paying late in normal course of business</li>
+              <li class="bad">General economic downturn or currency fluctuation</li>
+              <li class="bad">Simply forgetting or being on holiday</li>
+              <li class="bad">Deliberate decision to use funds for business reinvestment</li>
+              <li class="bad">Circumstances within the taxpayer's control</li>
+              <li class="bad">Repeated pattern of late payment</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="../assets/affinity.js"></script>
+<script>
+// ── Scoring & Generation Logic
+
+const REASON_SCORES = {
+  illness: 30, disaster: 30, dv: 30,
+  death: 25, atodelay: 25, theft: 25, industrial: 25,
+  debtor: 20, mentalhealth: 20,
+  advice: 15, thirdparty: 10,
+  hardship: 10, cashflow: 0, other: 5
+};
+
+function getChecked() {
+  return Array.from(document.querySelectorAll('.check-group input[type=checkbox]:checked')).map(c => c.value);
+}
+
+function calc() {
+  const submitter        = document.getElementById('submitterType').value;
+  const lodgments        = document.getElementById('lodgmentsUpToDate').value;
+  const accountType      = document.getElementById('accountType').value;
+  const gicAmount        = document.getElementById('gicAmount').value;
+  const debtPaid         = document.getElementById('debtPaid').value;
+  const planMet          = document.getElementById('planMet').value;
+  const primaryReason    = document.getElementById('primaryReason').value;
+  const circumstances    = document.getElementById('circumstances').value.trim();
+  const withinControl    = document.getElementById('withinControl').value;
+  const atoContact       = document.getElementById('atoContact').value;
+  const complianceHistory= document.getElementById('complianceHistory').value;
+  const oneOff           = document.getElementById('oneOff').value;
+  const checked          = getChecked();
+
+  // Show/hide conditional fields
+  document.getElementById('planMetGroup').style.display = debtPaid === 'plan' ? 'block' : 'none';
+  document.getElementById('lodgmentWarn').classList.toggle('show', lodgments === 'no' || lodgments === 'partial');
+
+  // Amount hint
+  const hints = {
+    under2500: '≤$2,500: Compliance history is the dominant factor. Phone submission available.',
+    '2500to10k': '$2,500–$10,000: A dedicated review team will assess. Strong grounds required.',
+    '10kto50k': '$10,000–$50,000: Comprehensive supporting documentation recommended.',
+    over50k: 'Over $50,000: Consider engaging a tax agent or tax lawyer to assist.'
+  };
+  document.getElementById('amountHint').textContent = hints[gicAmount] || '';
+
+  // ── Score calculation
+  let score = 0;
+
+  // Reason
+  score += REASON_SCORES[primaryReason] || 0;
+
+  // Control
+  if (withinControl === 'no') score += 15;
+  else if (withinControl === 'partial') score -= 5;
+
+  // Lodgments
+  if (lodgments === 'yes') score += 10;
+  else if (lodgments === 'no') score -= 20;
+  else if (lodgments === 'partial') score -= 10;
+
+  // Debt payment
+  if (debtPaid === 'yes') score += 10;
+  else if (debtPaid === 'plan') {
+    if (planMet === 'yes') score += 8;
+    else score -= 5;
+  } else if (debtPaid === 'no') score -= 10;
+
+  // Amount (small = compliance dominant)
+  if (gicAmount === 'under2500') score += 5;
+
+  // Compliance history
+  if (complianceHistory === 'excellent') score += 15;
+  else if (complianceHistory === 'good') score += 8;
+  else if (complianceHistory === 'fair') score += 0;
+  else if (complianceHistory === 'poor') score -= 15;
+
+  // One-off
+  if (oneOff === 'yes') score += 10;
+  else if (oneOff === 'no') score -= 15;
+
+  // ATO contact
+  if (atoContact === 'yes') score += 10;
+  else if (atoContact === 'professional') score += 5;
+
+  // Supporting docs
+  const docCount = checked.filter(c => ['medcert','financial','taxletter','disaster'].includes(c)).length;
+  score += Math.min(docCount * 5, 15);
+  if (checked.includes('proactive')) score += 5;
+  if (checked.includes('disproportionate')) score += 5;
+  if (checked.includes('vulnerable')) score += 5;
+
+  // Clamp
+  score = Math.max(5, Math.min(95, score));
+
+  // Check if enough data to show
+  const hasMinData = submitter && primaryReason && circumstances.length > 20;
+
+  // Update meter
+  const pctEl = document.getElementById('meterPct');
+  const barEl = document.getElementById('meterBar');
+  const msgEl = document.getElementById('meterMsg');
+
+  if (hasMinData) {
+    pctEl.textContent = score + '%';
+    barEl.style.width = score + '%';
+
+    if (score >= 80) {
+      pctEl.style.color = 'var(--success)';
+      barEl.className = 'progress-bar-fill green';
+      msgEl.textContent = "Your circumstances appear strong. A well-drafted request supported by evidence is likely to succeed.";
+    } else if (score >= 40) {
+      pctEl.style.color = 'var(--warning)';
+      barEl.className = 'progress-bar-fill amber';
+      msgEl.textContent = "A remission may be possible. Strengthen your request by providing more detail and documentation.";
+    } else {
+      pctEl.style.color = 'var(--danger)';
+      barEl.className = 'progress-bar-fill red';
+      msgEl.textContent = "Your circumstances as described may not meet the ATO's remission criteria. Consider seeking professional advice before submitting.";
+    }
+  } else {
+    pctEl.textContent = '—';
+    pctEl.style.color = 'var(--text-muted)';
+    barEl.style.width = '0%';
+    barEl.className = 'progress-bar-fill';
+    msgEl.textContent = 'Complete the questionnaire to see your estimated likelihood.';
+  }
+
+  // Generate text
+  generateText(hasMinData);
+}
+
+function generateText(show) {
+  const alert   = document.getElementById('genAlert');
+  const wrap    = document.getElementById('genTextWrap');
+  const textEl  = document.getElementById('generatedText');
+
+  if (!show) {
+    alert.style.display = 'block';
+    wrap.style.display  = 'none';
+    return;
+  }
+  alert.style.display = 'none';
+  wrap.style.display  = 'block';
+
+  const submitter     = document.getElementById('submitterType').value;
+  const name          = document.getElementById('taxpayerName').value.trim() || '[Taxpayer Name]';
+  const tfn           = document.getElementById('tfnAbn').value.trim();
+  const accountType   = document.getElementById('accountType').value;
+  const gicAmount     = document.getElementById('gicAmount').value;
+  const periods       = document.getElementById('gicPeriods').value.trim();
+  const debtPaid      = document.getElementById('debtPaid').value;
+  const primaryReason = document.getElementById('primaryReason').value;
+  const circumstances = document.getElementById('circumstances').value.trim();
+  const withinControl = document.getElementById('withinControl').value;
+  const atoContact    = document.getElementById('atoContact').value;
+  const steps         = document.getElementById('stepsToken').value.trim();
+  const compliance    = document.getElementById('complianceHistory').value;
+  const oneOff        = document.getElementById('oneOff').value;
+  const checked       = getChecked();
+
+  const isAgent = submitter === 'agent';
+  const intro = isAgent
+    ? `I am writing on behalf of my client, ${name}${tfn ? ` (TFN/ABN: ${tfn})` : ''}, as their registered tax agent, to respectfully request a full remission of the General Interest Charge (GIC) that has accrued`
+    : `I am writing to respectfully request a full remission of the General Interest Charge (GIC) that has accrued on my${tfn ? ` (TFN/ABN: ${tfn})` : ''} tax account`;
+
+  const accountDesc = {
+    incometax: 'income tax account',
+    bas: 'activity statement (BAS/IAS) account',
+    both: 'income tax and activity statement accounts',
+    other: 'tax account'
+  }[accountType] || 'tax account';
+
+  const amountDesc = {
+    under2500: 'under $2,500',
+    '2500to10k': 'between $2,500 and $10,000',
+    '10kto50k': 'between $10,000 and $50,000',
+    over50k: 'in excess of $50,000'
+  }[gicAmount] || '[amount]';
+
+  const reasonMap = {
+    illness: 'serious illness or hospitalisation',
+    disaster: 'a natural disaster',
+    dv: 'family and domestic violence',
+    death: 'the death of a key person',
+    atodelay: 'a delay caused by the ATO in issuing an assessment',
+    mentalhealth: 'a mental health crisis',
+    theft: 'theft of critical property and business records',
+    industrial: 'industrial action affecting operations',
+    debtor: 'the unforeseen insolvency of a major debtor',
+    advice: 'reliance on incorrect advice from a third-party professional',
+    thirdparty: 'a delay in receiving third-party information required to lodge and pay',
+    hardship: 'unexpected and severe financial hardship',
+    cashflow: 'significant cash flow difficulties',
+    other: 'the circumstances described below'
+  };
+
+  const controlMap = {
+    no: 'This circumstance was entirely unexpected and outside our/my control.',
+    partial: 'While some aspects were within our/my control, the primary cause was unforeseen and could not have been reasonably anticipated.',
+    yes: 'Although the circumstances arose from our/our own situation, the consequences were unforeseen and disproportionate.'
+  };
+
+  const complianceMap = {
+    excellent: `${isAgent ? `${name} has` : 'I have'} a strong compliance history over the past 3–5 years, having lodged and paid all obligations on time.`,
+    good: `${isAgent ? `${name} has` : 'I have'} a generally strong compliance history, with only minor and isolated lapses over the past 3–5 years.`,
+    fair: `${isAgent ? `${name} has` : 'I have'} a generally compliant history, though there have been some instances of late payment in prior years.`,
+    poor: `While there has been a history of some late payments, the current circumstances are particularly exceptional and warrant special consideration.`
+  };
+
+  const debtDesc = {
+    yes: 'The underlying tax debt has now been paid in full.',
+    partial: 'The underlying tax debt has been partially paid, and we/I am committed to clearing the remaining balance promptly.',
+    plan: `The underlying tax debt is the subject of a payment arrangement with the ATO, and we/I ${document.getElementById('planMet').value === 'yes' ? 'are meeting all instalment obligations on time' : 'are working to meet the instalment obligations'}.`,
+    no: 'We/I acknowledge the underlying debt remains outstanding and are taking active steps to address this.'
+  };
+
+  const docsNote = checked.length > 0
+    ? `\n\nIn support of this request, we/I are able to provide the following documentation: ${checked.map(c => ({
+        medcert: 'medical certificates or clinical records',
+        financial: 'financial statements and bank records',
+        taxletter: 'a letter from a registered tax professional',
+        disaster: 'evidence of the natural disaster (council/insurance documentation)',
+        proactive: 'records of proactive engagement with the ATO',
+        disproportionate: 'analysis showing the GIC has become disproportionate to the original debt',
+        vulnerable: 'documentation from a financial counsellor confirming current vulnerability'
+      }[c])).filter(Boolean).join('; ')}.`
+    : '';
+
+  const contactNote = {
+    yes: '\n\nWe/I contacted the ATO before or shortly after the due date to advise of the situation.',
+    professional: '\n\nAlthough direct contact with the ATO was not made at the time, we/I engaged a registered tax professional to assist in addressing the situation as promptly as possible.',
+    no: ''
+  }[atoContact] || '';
+
+  const stepsNote = steps
+    ? `\n\nTo address the situation as promptly as possible, the following steps were taken: ${steps}.`
+    : '';
+
+  const oneOffNote = oneOff === 'yes'
+    ? '\n\nThis is a one-off event and is entirely out of character given our/my compliance history.'
+    : '';
+
+  const closingScore = parseInt(document.getElementById('meterPct').textContent) || 0;
+  const closing = closingScore >= 60
+    ? 'We/I respectfully submit that the circumstances described above represent the type of exceptional and unforeseeable event that the ATO\'s remission discretion under PS LA 2011/12 was designed to address. We/I request a full remission of the GIC charged. We/I appreciate the ATO\'s consideration of this matter.'
+    : 'We/I acknowledge that our/my circumstances may not meet all criteria for full remission. We/I respectfully request the ATO consider a partial remission of the GIC in recognition of the genuine and difficult circumstances described above, our/my compliance history, and the steps taken to remedy the situation.';
+
+  const text = `GENERAL INTEREST CHARGE REMISSION REQUEST
+
+Taxpayer: ${name}${tfn ? `\nTFN / ABN: ${tfn}` : ''}
+Account Type: ${accountDesc.charAt(0).toUpperCase() + accountDesc.slice(1)}${periods ? `\nPeriod(s): ${periods}` : ''}
+Approximate GIC Amount: ${amountDesc}
+
+─────────────────────────────────────────────
+
+CIRCUMSTANCES
+
+${intro} on the ${accountDesc}${periods ? ` for ${periods}` : ''}, approximating ${amountDesc}.
+
+The reason the tax obligation was not met on time relates to ${reasonMap[primaryReason] || 'the circumstances described below'}.
+
+${circumstances}
+
+${controlMap[withinControl] || ''}${contactNote}${stepsNote}
+
+─────────────────────────────────────────────
+
+PAYMENT OF DEBT
+
+${debtDesc[debtPaid] || ''}
+
+─────────────────────────────────────────────
+
+COMPLIANCE HISTORY
+
+${complianceMap[compliance] || ''}${oneOffNote}
+
+─────────────────────────────────────────────
+
+SUPPORTING DOCUMENTATION${docsNote || '\n\nNo additional documentation has been specified. Supporting evidence should be attached wherever available.'}
+
+─────────────────────────────────────────────
+
+REQUEST
+
+${closing}`;
+
+  textEl.textContent = text;
+}
+
+function copyGenText() {
+  const text = document.getElementById('generatedText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  });
+}
+
+function clearForm() {
+  if (!confirm('Clear all entries and start again?')) return;
+  document.querySelectorAll('select, input[type=text], textarea').forEach(el => { el.value = ''; });
+  document.querySelectorAll('input[type=checkbox]').forEach(el => { el.checked = false; });
+  calc();
+}
+
+document.addEventListener('DOMContentLoaded', calc);
+</script>
+</body>
+</html>

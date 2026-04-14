@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payroll Tax Checker — Affinity</title>
+<link rel="stylesheet" href="../assets/affinity.css">
+</head>
+<body>
+<script src="../assets/sidebar.js"></script>
+<script>injectSidebar('payroll-tax.html');</script>
+<div class="layout"><div class="main">
+<div class="page-header">
+  <div class="page-header-icon">🗂️</div>
+  <div class="page-header-text"><h1>Payroll Tax Quick Checker</h1><p>Estimate payroll tax liability by state/territory. Supports multi-state employers.</p></div>
+  <div style="margin-left:auto"><button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Print / PDF</button></div>
+</div>
+<div class="page-body">
+<div class="tool-layout">
+  <div>
+    <div class="card">
+      <div class="card-title">Total Australian Wages</div>
+      <div class="form-group">
+        <label>Total Australian Wages (all states) ($) <span class="required">*</span></label>
+        <div class="input-prefix"><span>$</span><input type="number" id="totalWages" placeholder="0" oninput="calc()"></div>
+        <div class="form-hint">Used to determine grouping / threshold sharing for multi-state employers</div>
+      </div>
+      <div class="form-group">
+        <label>Financial Year</label>
+        <select id="fy" onchange="calc()"><option value="2025">2024–25</option><option value="2024">2023–24</option></select>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Wages by State / Territory</div>
+      <div id="stateInputs"></div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <div class="card-title">Summary</div>
+      <div class="result-box">
+        <div class="result-row"><span class="result-label">Total Payroll Tax (All States)</span><span class="result-value highlight" id="rTotal">$0</span></div>
+        <div class="result-row"><span class="result-label">States Liable</span><span class="result-value" id="rLiable">0</span></div>
+        <div class="result-row"><span class="result-label">States Exempt</span><span class="result-value positive" id="rExempt">0</span></div>
+        <div class="result-row"><span class="result-label">Effective Rate</span><span class="result-value" id="rRate">—</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">State-by-State Summary</div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead><tr><th>State</th><th>Wages ($)</th><th>Threshold ($)</th><th>Rate</th><th>Tax ($)</th><th>Status</th></tr></thead>
+          <tbody id="stateBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">2024–25 Rates &amp; Thresholds</div>
+      <table class="data-table">
+        <thead><tr><th>State</th><th>Threshold</th><th>Rate</th></tr></thead>
+        <tbody>
+          <tr><td>VIC</td><td>$900,000</td><td>4.85%</td></tr>
+          <tr><td>NSW</td><td>$1,200,000</td><td>5.45%</td></tr>
+          <tr><td>QLD</td><td>$1,300,000</td><td>4.75%</td></tr>
+          <tr><td>WA</td><td>$1,000,000</td><td>5.5%</td></tr>
+          <tr><td>SA</td><td>$1,500,000</td><td>4.95%</td></tr>
+          <tr><td>TAS</td><td>$1,250,000</td><td>4.0%</td></tr>
+          <tr><td>ACT</td><td>$2,000,000</td><td>6.85%</td></tr>
+          <tr><td>NT</td><td>$1,500,000</td><td>5.5%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div class="disclaimer">This is a quick-reference guide only. Grouping provisions may apply for related entities. Multi-state employers share the annual threshold proportional to wages. Some states apply tapering deductions. Always verify with the relevant State Revenue Office.</div>
+</div></div></div>
+<script src="../assets/affinity.js"></script>
+<script>
+const STATES = [
+  {id:'vic',name:'Victoria (VIC)',      threshold:900000,  rate:4.85},
+  {id:'nsw',name:'New South Wales (NSW)',threshold:1200000, rate:5.45},
+  {id:'qld',name:'Queensland (QLD)',    threshold:1300000, rate:4.75},
+  {id:'wa', name:'Western Australia (WA)',threshold:1000000,rate:5.5},
+  {id:'sa', name:'South Australia (SA)',threshold:1500000, rate:4.95},
+  {id:'tas',name:'Tasmania (TAS)',      threshold:1250000, rate:4.0},
+  {id:'act',name:'ACT',                 threshold:2000000, rate:6.85},
+  {id:'nt', name:'Northern Territory (NT)',threshold:1500000,rate:5.5},
+];
+
+function buildStateInputs() {
+  const c = document.getElementById('stateInputs');
+  c.innerHTML = STATES.map(s => `
+    <div class="form-group" style="margin-bottom:10px">
+      <label>${s.name}</label>
+      <div class="input-prefix"><span>$</span><input type="number" id="w_${s.id}" placeholder="0" oninput="calc()"></div>
+    </div>`).join('');
+}
+
+function calc() {
+  const totalWages = pf(document.getElementById('totalWages').value);
+  let totalTax = 0, liable = 0, exempt = 0;
+  let tbody = '';
+  STATES.forEach(s => {
+    const wages = pf(document.getElementById('w_' + s.id) ? document.getElementById('w_' + s.id).value : 0);
+    if (!wages) { tbody += `<tr><td class="text">${s.name}</td><td>—</td><td>${fmt(s.threshold,0)}</td><td>${fmtP(s.rate)}</td><td>—</td><td><span class="badge badge-neutral">N/A</span></td></tr>`; return; }
+    let taxable = Math.max(0, wages - s.threshold);
+    if (totalWages > s.threshold * 2) {
+      const share = totalWages > 0 ? wages / totalWages : 1;
+      taxable = Math.max(0, wages - s.threshold * share);
+    }
+    const tax = taxable * s.rate / 100;
+    totalTax += tax;
+    if (tax > 0) liable++; else exempt++;
+    tbody += `<tr><td class="text">${s.name}</td><td>${fmt(wages,0)}</td><td>${fmt(s.threshold,0)}</td><td>${fmtP(s.rate)}</td><td class="${tax>0?'highlight':'positive'}">${fmt(tax)}</td><td><span class="badge ${tax>0?'badge-warning':'badge-success'}">${tax>0?'Liable':'Exempt'}</span></td></tr>`;
+  });
+  document.getElementById('rTotal').textContent = fmt(totalTax);
+  document.getElementById('rLiable').textContent = liable;
+  document.getElementById('rExempt').textContent = exempt;
+  const enteredWages = STATES.reduce((s,st) => { const el = document.getElementById('w_'+st.id); return s + (el ? pf(el.value) : 0); }, 0);
+  document.getElementById('rRate').textContent = enteredWages > 0 ? fmtP(totalTax/enteredWages*100) : '—';
+  document.getElementById('stateBody').innerHTML = tbody;
+}
+document.addEventListener('DOMContentLoaded', buildStateInputs);
+</script>
+</body></html>

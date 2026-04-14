@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CGT Calculator — Affinity</title>
+<link rel="stylesheet" href="../assets/affinity.css">
+</head>
+<body>
+<script src="../assets/sidebar.js"></script>
+<script>injectSidebar('cgt.html');</script>
+<div class="layout"><div class="main">
+<div class="page-header">
+  <div class="page-header-icon">📈</div>
+  <div class="page-header-text">
+    <h1>CGT Calculator</h1>
+    <p>Calculate net capital gain, CGT discount eligibility and indicative tax impact for Australian assets.</p>
+  </div>
+  <div style="margin-left:auto"><button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Print / PDF</button></div>
+</div>
+<div class="page-body">
+<div class="tool-layout">
+  <div>
+    <div class="card">
+      <div class="card-title">Asset &amp; Disposal Details</div>
+      <div class="form-group"><label>Asset Description</label><input type="text" id="assetDesc" placeholder="e.g. Land at 123 Main St, Shares in XYZ Ltd"></div>
+      <div class="form-group">
+        <label>Entity Type <span class="required">*</span></label>
+        <select id="entityType" onchange="calc()">
+          <option value="individual">Individual</option>
+          <option value="trust">Trust (distributing to individual beneficiary)</option>
+          <option value="company">Company</option>
+          <option value="smsf">SMSF (accumulation phase)</option>
+          <option value="smsf_pension">SMSF (pension phase — exempt)</option>
+          <option value="foreign">Foreign resident</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Date of Acquisition <span class="required">*</span></label>
+        <input type="date" id="acquisitionDate" oninput="calc()">
+      </div>
+      <div class="form-group">
+        <label>Date of Disposal <span class="required">*</span></label>
+        <input type="date" id="disposalDate" oninput="calc()" data-today>
+      </div>
+      <div class="form-group">
+        <label>Cost Base ($) <span class="required">*</span>
+          <span class="tooltip-wrap"><i class="tooltip-icon">i</i><span class="tooltip-text">Element 1: acquisition cost. Include legal fees, stamp duty, improvement costs (Element 2), incidental costs of acquisition and disposal (Element 3).</span></span>
+        </label>
+        <div class="input-prefix"><span>$</span><input type="number" id="costBase" placeholder="0" oninput="calc()"></div>
+      </div>
+      <div class="form-group">
+        <label>Capital Proceeds ($) <span class="required">*</span></label>
+        <div class="input-prefix"><span>$</span><input type="number" id="proceeds" placeholder="0" oninput="calc()"></div>
+      </div>
+      <div class="form-group">
+        <label>Prior Year Capital Losses ($)</label>
+        <div class="input-prefix"><span>$</span><input type="number" id="priorLosses" placeholder="0" oninput="calc()"></div>
+      </div>
+      <div class="form-group">
+        <label>Current Year Other Capital Losses ($)</label>
+        <div class="input-prefix"><span>$</span><input type="number" id="currentLosses" placeholder="0" oninput="calc()"></div>
+      </div>
+      <div class="form-group">
+        <label>Other Taxable Income This Year ($)
+          <span class="tooltip-wrap"><i class="tooltip-icon">i</i><span class="tooltip-text">Used to estimate marginal rate applied to the net capital gain. Does not affect the CGT calculation itself.</span></span>
+        </label>
+        <div class="input-prefix"><span>$</span><input type="number" id="otherIncome" placeholder="0" oninput="calc()"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">CGT Discount Reference</div>
+      <table class="data-table">
+        <thead><tr><th>Entity</th><th>Discount</th><th>Holding Required</th></tr></thead>
+        <tbody>
+          <tr><td class="text">Individual / Trust</td><td class="positive">50%</td><td class="text">&gt; 12 months</td></tr>
+          <tr><td class="text">SMSF (accumulation)</td><td class="positive">33.33%</td><td class="text">&gt; 12 months</td></tr>
+          <tr><td class="text">Company</td><td class="negative">Nil</td><td class="text">No discount</td></tr>
+          <tr><td class="text">SMSF (pension phase)</td><td class="positive">100% exempt</td><td class="text">Pension assets</td></tr>
+          <tr><td class="text">Foreign resident</td><td class="negative">Nil</td><td class="text">No discount (from 8 May 2012)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-title">CGT Summary</div>
+      <div class="result-box">
+        <div class="result-row"><span class="result-label">Gross Capital Gain / (Loss)</span><span class="result-value" id="rGross">—</span></div>
+        <div class="result-row"><span class="result-label">Holding Period</span><span class="result-value" id="rHolding">—</span></div>
+        <div class="result-row"><span class="result-label">Discount Eligible?</span><span class="result-value" id="rDiscountElig">—</span></div>
+        <div class="result-row"><span class="result-label">Discount Rate</span><span class="result-value" id="rDiscountRate">—</span></div>
+        <div class="result-row"><span class="result-label">Capital Gain After Discount</span><span class="result-value highlight" id="rAfterDiscount">—</span></div>
+        <div class="result-row"><span class="result-label">Less: Capital Losses Applied</span><span class="result-value" id="rLossesApplied">—</span></div>
+        <div class="result-row"><span class="result-label">Net Capital Gain (Assessable)</span><span class="result-value highlight" id="rNetGain">—</span></div>
+        <div class="result-row"><span class="result-label">Carried Forward Loss (if any)</span><span class="result-value warning" id="rCarryForward">—</span></div>
+        <div class="result-row"><span class="result-label">Estimated Tax on Gain</span><span class="result-value negative" id="rTaxOnGain">—</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Cost Base Components Reference</div>
+      <table class="data-table">
+        <thead><tr><th>#</th><th>Element</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td class="text">Acquisition cost (purchase price)</td></tr>
+          <tr><td>2</td><td class="text">Incidental acquisition costs (stamp duty, legal, agent fees)</td></tr>
+          <tr><td>3</td><td class="text">Non-capital ownership costs (rates, interest on investment property)</td></tr>
+          <tr><td>4</td><td class="text">Capital improvement costs</td></tr>
+          <tr><td>5</td><td class="text">Incidental disposal costs (agent commission, legal fees)</td></tr>
+        </tbody>
+      </table>
+      <div class="form-hint" style="margin-top:8px">Note: Element 3 is excluded from the reduced cost base used for calculating capital losses on investment properties.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Important Notes</div>
+      <div class="alert alert-warning" style="margin-bottom:0">
+        <strong>CGT event A1</strong> (disposal of asset) is assumed. Other CGT events (B1, C2, D1, E5, E6, K6, etc.) require separate analysis.<br><br>
+        <strong>Small business concessions</strong> (15-year exemption, 50% active asset reduction, retirement exemption, rollover) are NOT applied here — they may significantly reduce or eliminate CGT for eligible small business owners.<br><br>
+        <strong>Main residence exemption</strong> is NOT applied here. A full or partial exemption may apply.
+      </div>
+    </div>
+  </div>
+</div>
+<div class="disclaimer">This tool provides an indicative CGT calculation only. It does not account for the main residence exemption, small business CGT concessions, the indexation method (for assets acquired before 21 Sept 1999), CGT rollovers, or complex trust distribution scenarios. Always obtain specific advice for individual client situations.</div>
+</div></div></div>
+
+<script src="../assets/affinity.js"></script>
+<script>
+function marginalRate(income) {
+  if (income <= 18200)  return 0;
+  if (income <= 45000)  return 0.19;
+  if (income <= 135000) return 0.325;
+  if (income <= 190000) return 0.37;
+  return 0.45;
+}
+function calc() {
+  const entity       = document.getElementById('entityType').value;
+  const acqDateStr   = document.getElementById('acquisitionDate').value;
+  const dispDateStr  = document.getElementById('disposalDate').value;
+  const costBase     = pf(document.getElementById('costBase').value);
+  const proceeds     = pf(document.getElementById('proceeds').value);
+  const priorLosses  = pf(document.getElementById('priorLosses').value);
+  const curLosses    = pf(document.getElementById('currentLosses').value);
+  const otherIncome  = pf(document.getElementById('otherIncome').value);
+
+  if (!costBase || !proceeds) return;
+
+  const grossGain = proceeds - costBase;
+
+  // Holding period
+  let holdingDays = 0, holdingStr = '—';
+  if (acqDateStr && dispDateStr) {
+    const acq = new Date(acqDateStr), disp = new Date(dispDateStr);
+    holdingDays = Math.round((disp - acq) / 86400000);
+    const years = Math.floor(holdingDays / 365);
+    const months = Math.floor((holdingDays % 365) / 30);
+    holdingStr = years > 0 ? `${years}y ${months}m (${holdingDays} days)` : `${months} months (${holdingDays} days)`;
+  }
+
+  const over12m = holdingDays > 365;
+
+  // Discount
+  let discountRate = 0, discountElig = 'No';
+  if (entity === 'smsf_pension') {
+    document.getElementById('rGross').textContent = fmt(grossGain);
+    document.getElementById('rHolding').textContent = holdingStr;
+    document.getElementById('rDiscountElig').innerHTML = '<span class="badge badge-success">Exempt</span>';
+    document.getElementById('rDiscountRate').textContent = '100% (pension phase)';
+    document.getElementById('rAfterDiscount').textContent = '$0';
+    document.getElementById('rLossesApplied').textContent = '$0';
+    document.getElementById('rNetGain').textContent = '$0 — fully exempt';
+    document.getElementById('rCarryForward').textContent = '—';
+    document.getElementById('rTaxOnGain').textContent = '$0';
+    return;
+  }
+  if (grossGain > 0 && over12m) {
+    if (entity === 'individual' || entity === 'trust') { discountRate = 0.5; discountElig = 'Yes — 50% discount'; }
+    else if (entity === 'smsf') { discountRate = 0.3333; discountElig = 'Yes — 33.33% discount'; }
+    else if (entity === 'company' || entity === 'foreign') { discountRate = 0; discountElig = 'No'; }
+  }
+
+  const gainAfterDiscount = grossGain > 0 ? grossGain * (1 - discountRate) : grossGain;
+  const totalLosses = priorLosses + curLosses;
+  let gainAfterLosses = Math.max(0, gainAfterDiscount - totalLosses);
+  let carryForward = totalLosses > gainAfterDiscount ? totalLosses - gainAfterDiscount : 0;
+
+  // If capital loss overall
+  let netGainDisplay = gainAfterLosses;
+  if (grossGain < 0) { carryForward = Math.abs(grossGain) + totalLosses; gainAfterLosses = 0; }
+
+  // Tax estimate
+  let taxRate = 0;
+  if (entity === 'company') taxRate = 0.30;
+  else if (entity === 'smsf') taxRate = 0.15;
+  else if (entity === 'foreign') taxRate = 0.325;
+  else taxRate = marginalRate(otherIncome + gainAfterLosses) + 0.02; // income tax + Medicare approx
+  const taxOnGain = gainAfterLosses * taxRate;
+
+  // Display
+  document.getElementById('rGross').textContent = fmt(grossGain);
+  document.getElementById('rGross').className = 'result-value ' + (grossGain >= 0 ? 'highlight' : 'negative');
+  document.getElementById('rHolding').textContent = holdingStr;
+  document.getElementById('rDiscountElig').innerHTML = over12m && discountRate > 0
+    ? '<span class="badge badge-success">' + discountElig + '</span>'
+    : '<span class="badge badge-neutral">No</span>';
+  document.getElementById('rDiscountRate').textContent = discountRate > 0 ? fmtP(discountRate*100,1) + ' discount applied' : 'Nil';
+  document.getElementById('rAfterDiscount').textContent = fmt(gainAfterDiscount);
+  document.getElementById('rLossesApplied').textContent = totalLosses > 0 ? '-' + fmt(Math.min(totalLosses, gainAfterDiscount)) : '$0';
+  document.getElementById('rNetGain').textContent = fmt(gainAfterLosses);
+  document.getElementById('rCarryForward').textContent = carryForward > 0 ? fmt(carryForward) + ' carried forward' : 'Nil';
+  document.getElementById('rTaxOnGain').textContent = gainAfterLosses > 0 ? fmt(taxOnGain) + ' (~' + fmtP(taxRate*100, 0) + ')' : '$0';
+}
+document.addEventListener('DOMContentLoaded', calc);
+</script>
+</body></html>

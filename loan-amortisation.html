@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FBT Calculator — Affinity</title>
+<link rel="stylesheet" href="../assets/affinity.css">
+</head>
+<body>
+<script src="../assets/sidebar.js"></script>
+<script>injectSidebar('fbt.html');</script>
+<div class="layout"><div class="main">
+<div class="page-header">
+  <div class="page-header-icon">🚗</div>
+  <div class="page-header-text">
+    <h1>FBT Calculator</h1>
+    <p>Calculate fringe benefits tax for Type 1, Type 2 benefits and car fringe benefits (statutory and operating cost methods).</p>
+  </div>
+  <div style="margin-left:auto"><button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Print / PDF</button></div>
+</div>
+<div class="page-body">
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="tab-type">Type 1 / Type 2 Benefits</button>
+  <button class="tab-btn" data-tab="tab-car-stat">Car — Statutory Method</button>
+  <button class="tab-btn" data-tab="tab-car-op">Car — Operating Cost Method</button>
+  <button class="tab-btn" data-tab="tab-ref">Reference</button>
+</div>
+
+<!-- TYPE 1 / TYPE 2 -->
+<div class="tab-panel active" id="tab-type">
+  <div class="tool-layout">
+    <div class="card">
+      <div class="card-title">Benefit Details</div>
+      <div class="form-group">
+        <label>FBT Year <span class="required">*</span></label>
+        <select id="t_year" onchange="calcType()">
+          <option value="2025">2024–25 (year ending 31 March 2025)</option>
+          <option value="2026">2025–26 (year ending 31 March 2026)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Benefit Type
+          <span class="tooltip-wrap"><i class="tooltip-icon">i</i><span class="tooltip-text">Type 1: GST credit claimable by employer (gross-up rate 2.0802). Type 2: no GST credit available (gross-up rate 1.8868).</span></span>
+        </label>
+        <select id="t_type" onchange="calcType()">
+          <option value="1">Type 1 (GST credit claimable — gross-up × 2.0802)</option>
+          <option value="2">Type 2 (no GST credit — gross-up × 1.8868)</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Taxable Value of Benefit ($) <span class="required">*</span></label><div class="input-prefix"><span>$</span><input type="number" id="t_value" placeholder="0" oninput="calcType()"></div></div>
+      <div class="form-group">
+        <label>Any Employee Contribution?</label>
+        <div class="input-prefix"><span>$</span><input type="number" id="t_contrib" placeholder="0" oninput="calcType()"></div>
+      </div>
+      <div class="form-group">
+        <label>Days Available in FBT Year</label>
+        <input type="number" id="t_days" value="365" min="1" max="366" oninput="calcType()">
+        <div class="form-hint">For benefits not available the full year, pro-rate to days</div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-title">FBT Calculation</div>
+        <div class="result-box">
+          <div class="result-row"><span class="result-label">Gross-Up Rate</span><span class="result-value" id="t_rRate">—</span></div>
+          <div class="result-row"><span class="result-label">Grossed-Up Value</span><span class="result-value" id="t_rGrossed">—</span></div>
+          <div class="result-row"><span class="result-label">Less: Employee Contribution</span><span class="result-value positive" id="t_rContrib">—</span></div>
+          <div class="result-row"><span class="result-label">FBT Rate</span><span class="result-value" id="t_rFBTRate">47%</span></div>
+          <div class="result-row"><span class="result-label">FBT Payable</span><span class="result-value highlight negative" id="t_rFBT">—</span></div>
+          <div class="result-row"><span class="result-label">Reportable FBT Amount</span><span class="result-value" id="t_rReportable">—</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">When to Use Each Type</div>
+        <table class="data-table">
+          <thead><tr><th>Type</th><th>Gross-Up Rate</th><th>Common Examples</th></tr></thead>
+          <tbody>
+            <tr><td>Type 1</td><td class="highlight">2.0802</td><td class="text">Meals, entertainment with GST credit; goods/services with GST input tax credit</td></tr>
+            <tr><td>Type 2</td><td class="highlight">1.8868</td><td class="text">Car fringe benefits, housing, expense payments for GST-free supplies</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CAR STATUTORY -->
+<div class="tab-panel" id="tab-car-stat">
+  <div class="tool-layout">
+    <div class="card">
+      <div class="card-title">Car Details — Statutory Formula Method</div>
+      <div class="form-group"><label>Base Value of Car ($)
+        <span class="tooltip-wrap"><i class="tooltip-icon">i</i><span class="tooltip-text">Usually the GST-inclusive purchase price (or market value). For a car bought after 1 Jul 2000, reduce by input tax credit claimed.</span></span>
+      </label><div class="input-prefix"><span>$</span><input type="number" id="cs_baseValue" placeholder="0" oninput="calcCarStat()"></div></div>
+      <div class="form-group"><label>Days Car Available (in FBT Year)</label><input type="number" id="cs_days" value="365" oninput="calcCarStat()"></div>
+      <div class="form-group"><label>Employee Contribution ($)</label><div class="input-prefix"><span>$</span><input type="number" id="cs_contrib" placeholder="0" oninput="calcCarStat()"></div></div>
+      <div class="form-group"><label>FBT Year</label>
+        <select id="cs_year" onchange="calcCarStat()">
+          <option value="2025">2024–25</option>
+          <option value="2026">2025–26</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-title">Statutory Formula Result</div>
+        <div class="result-box">
+          <div class="result-row"><span class="result-label">Statutory Rate</span><span class="result-value" id="cs_rStatRate">20%</span></div>
+          <div class="result-row"><span class="result-label">Taxable Value (pre-contribution)</span><span class="result-value" id="cs_rTV">—</span></div>
+          <div class="result-row"><span class="result-label">Less: Employee Contribution</span><span class="result-value positive" id="cs_rContrib">—</span></div>
+          <div class="result-row"><span class="result-label">Net Taxable Value</span><span class="result-value" id="cs_rNetTV">—</span></div>
+          <div class="result-row"><span class="result-label">Grossed-Up Value (Type 2)</span><span class="result-value" id="cs_rGrossed">—</span></div>
+          <div class="result-row"><span class="result-label">FBT Payable</span><span class="result-value highlight negative" id="cs_rFBT">—</span></div>
+          <div class="result-row"><span class="result-label">Reportable FBT Amount</span><span class="result-value" id="cs_rReportable">—</span></div>
+        </div>
+        <div class="alert alert-info" style="margin-top:12px;margin-bottom:0">
+          Statutory formula: <strong>Base Value × 20% × (Days Available ÷ 365)</strong>. The 20% flat rate applies to all cars from 10 May 2011, regardless of kilometres travelled.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CAR OPERATING COST -->
+<div class="tab-panel" id="tab-car-op">
+  <div class="tool-layout">
+    <div class="card">
+      <div class="card-title">Car Details — Operating Cost Method</div>
+      <div class="alert alert-warning" style="margin-bottom:16px">
+        <strong>Logbook required.</strong> The operating cost method requires a valid 12-week logbook. It usually produces a lower taxable value when business use % is high (&gt;65%).
+      </div>
+      <div class="form-group"><label>Total Operating Costs for Year ($)
+        <span class="tooltip-wrap"><i class="tooltip-icon">i</i><span class="tooltip-text">Include fuel, oil, repairs, insurance, registration, interest on car loan (or deemed interest on employer-owned car). Exclude depreciation for employer-owned cars — it's captured in the deemed depreciation element.</span></span>
+      </label><div class="input-prefix"><span>$</span><input type="number" id="co_opCost" placeholder="0" oninput="calcCarOp()"></div></div>
+      <div class="form-group"><label>Deemed Depreciation / Actual Dep (if owned by employer) ($)</label><div class="input-prefix"><span>$</span><input type="number" id="co_dep" placeholder="0" oninput="calcCarOp()"></div></div>
+      <div class="form-group"><label>Business Use % (from logbook) <span class="required">*</span></label><input type="number" id="co_bizPct" value="70" min="0" max="100" oninput="calcCarOp()"></div>
+      <div class="form-group"><label>Employee Contribution ($)</label><div class="input-prefix"><span>$</span><input type="number" id="co_contrib" placeholder="0" oninput="calcCarOp()"></div></div>
+      <div class="form-group"><label>Days Available</label><input type="number" id="co_days" value="365" oninput="calcCarOp()"></div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-title">Operating Cost Method Result</div>
+        <div class="result-box">
+          <div class="result-row"><span class="result-label">Total Costs (incl. depreciation)</span><span class="result-value" id="co_rTotalCost">—</span></div>
+          <div class="result-row"><span class="result-label">Business Use %</span><span class="result-value" id="co_rBizPct">—</span></div>
+          <div class="result-row"><span class="result-label">Private Use %</span><span class="result-value" id="co_rPrivPct">—</span></div>
+          <div class="result-row"><span class="result-label">Taxable Value (pre-contribution)</span><span class="result-value" id="co_rTV">—</span></div>
+          <div class="result-row"><span class="result-label">Less: Employee Contribution</span><span class="result-value positive" id="co_rContrib">—</span></div>
+          <div class="result-row"><span class="result-label">Net Taxable Value</span><span class="result-value" id="co_rNetTV">—</span></div>
+          <div class="result-row"><span class="result-label">Grossed-Up Value (Type 2)</span><span class="result-value" id="co_rGrossed">—</span></div>
+          <div class="result-row"><span class="result-label">FBT Payable</span><span class="result-value highlight negative" id="co_rFBT">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REFERENCE -->
+<div class="tab-panel" id="tab-ref">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">FBT Key Rates</div>
+      <table class="data-table">
+        <thead><tr><th>Item</th><th>2024–25</th><th>2025–26</th></tr></thead>
+        <tbody>
+          <tr><td class="text">FBT Tax Rate</td><td class="highlight">47%</td><td class="highlight">47%</td></tr>
+          <tr><td class="text">Type 1 Gross-Up Rate</td><td>2.0802</td><td>2.0802</td></tr>
+          <tr><td class="text">Type 2 Gross-Up Rate</td><td>1.8868</td><td>1.8868</td></tr>
+          <tr><td class="text">Car Statutory Rate</td><td>20%</td><td>20%</td></tr>
+          <tr><td class="text">Car Deemed Depreciation Rate</td><td>25% DV</td><td>25% DV</td></tr>
+          <tr><td class="text">Reportable Threshold</td><td>&gt;$2,000</td><td>&gt;$2,000</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">FBT Exempt Benefits</div>
+      <ul class="step-list" style="counter-reset:none">
+        <li style="display:block;padding:5px 0;border-bottom:1px solid var(--border-light);font-size:0.82rem">Minor benefits &lt;$300 taxable value (infrequent and irregular)</li>
+        <li style="display:block;padding:5px 0;border-bottom:1px solid var(--border-light);font-size:0.82rem">Work-related items: laptops, phones, tools of trade (1 per year)</li>
+        <li style="display:block;padding:5px 0;border-bottom:1px solid var(--border-light);font-size:0.82rem">In-house gym / recreation facilities</li>
+        <li style="display:block;padding:5px 0;border-bottom:1px solid var(--border-light);font-size:0.82rem">Emergency assistance / medical treatment</li>
+        <li style="display:block;padding:5px 0;border-bottom:1px solid var(--border-light);font-size:0.82rem">Relocation costs (exempt amounts)</li>
+        <li style="display:block;padding:5px 0;font-size:0.82rem">Car parking (below threshold, or remote area)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="disclaimer" style="margin-top:20px">FBT year runs 1 April to 31 March. The FBT rate and gross-up rates are for 2024–25 and 2025–26. Figures shown are indicative only. FBT involves complex provisions including exempt benefits, otherwise deductible rule, employee contributions and the reportable fringe benefits amount. Always verify against ATO FBT publications.</div>
+</div></div></div>
+
+<script src="../assets/affinity.js"></script>
+<script>
+initTabs();
+
+const FBT_RATE = 0.47;
+const GROSSUP_T1 = 2.0802;
+const GROSSUP_T2 = 1.8868;
+
+function calcType() {
+  const type = pi(document.getElementById('t_type').value);
+  const val = pf(document.getElementById('t_value').value);
+  const contrib = pf(document.getElementById('t_contrib').value);
+  const days = pf(document.getElementById('t_days').value) || 365;
+  if (!val) return;
+  const gu = type === 1 ? GROSSUP_T1 : GROSSUP_T2;
+  const prorated = val * (days / 365) - contrib;
+  const netTV = Math.max(0, prorated);
+  const grossed = netTV * gu;
+  const fbt = grossed * FBT_RATE;
+  document.getElementById('t_rRate').textContent = gu.toFixed(4);
+  document.getElementById('t_rGrossed').textContent = fmt(grossed);
+  document.getElementById('t_rContrib').textContent = contrib > 0 ? '-' + fmt(contrib) : '$0';
+  document.getElementById('t_rFBT').textContent = fmt(fbt);
+  document.getElementById('t_rReportable').textContent = grossed > 2000 ? fmt(grossed) : 'N/A (under $2,000 threshold)';
+}
+
+function calcCarStat() {
+  const base = pf(document.getElementById('cs_baseValue').value);
+  const days = pf(document.getElementById('cs_days').value) || 365;
+  const contrib = pf(document.getElementById('cs_contrib').value);
+  if (!base) return;
+  const tv = base * 0.20 * (days / 365);
+  const netTV = Math.max(0, tv - contrib);
+  const grossed = netTV * GROSSUP_T2;
+  const fbt = grossed * FBT_RATE;
+  document.getElementById('cs_rTV').textContent = fmt(tv);
+  document.getElementById('cs_rContrib').textContent = contrib > 0 ? '-' + fmt(contrib) : '$0';
+  document.getElementById('cs_rNetTV').textContent = fmt(netTV);
+  document.getElementById('cs_rGrossed').textContent = fmt(grossed);
+  document.getElementById('cs_rFBT').textContent = fmt(fbt);
+  document.getElementById('cs_rReportable').textContent = grossed > 2000 ? fmt(grossed) : 'N/A';
+}
+
+function calcCarOp() {
+  const opCost = pf(document.getElementById('co_opCost').value);
+  const dep = pf(document.getElementById('co_dep').value);
+  const bizPct = pf(document.getElementById('co_bizPct').value) / 100;
+  const contrib = pf(document.getElementById('co_contrib').value);
+  const days = pf(document.getElementById('co_days').value) || 365;
+  if (!opCost) return;
+  const totalCost = opCost + dep;
+  const privPct = 1 - bizPct;
+  const tv = totalCost * privPct * (days / 365);
+  const netTV = Math.max(0, tv - contrib);
+  const grossed = netTV * GROSSUP_T2;
+  const fbt = grossed * FBT_RATE;
+  document.getElementById('co_rTotalCost').textContent = fmt(totalCost);
+  document.getElementById('co_rBizPct').textContent = fmtP(bizPct * 100);
+  document.getElementById('co_rPrivPct').textContent = fmtP(privPct * 100);
+  document.getElementById('co_rTV').textContent = fmt(tv);
+  document.getElementById('co_rContrib').textContent = contrib > 0 ? '-' + fmt(contrib) : '$0';
+  document.getElementById('co_rNetTV').textContent = fmt(netTV);
+  document.getElementById('co_rGrossed').textContent = fmt(grossed);
+  document.getElementById('co_rFBT').textContent = fmt(fbt);
+}
+
+document.addEventListener('DOMContentLoaded', function() { initTabs(); });
+</script>
+</body></html>

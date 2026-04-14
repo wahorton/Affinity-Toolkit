@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quick Links — Affinity</title>
+<link rel="stylesheet" href="../assets/affinity.css">
+<style>
+.links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.link-card {
+  background: var(--navy-light);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.18s;
+  position: relative;
+}
+.link-card:hover {
+  border-color: rgba(74,127,193,0.45);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+.link-card-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.link-card-name .ext-icon {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+.link-card-url  { font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.link-card-note { font-size: 0.74rem; color: var(--blue-light); margin-top: 2px; }
+.section-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  margin-top: 24px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-light);
+}
+.section-label:first-child { margin-top: 0; }
+.link-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  background: rgba(74,127,193,0.15);
+}
+</style>
+</head>
+<body>
+<script src="../assets/sidebar.js"></script>
+<script>injectSidebar('links.html');</script>
+
+<div class="layout">
+  <div class="main">
+    <div class="page-header">
+      <div class="page-header-icon">🔗</div>
+      <div class="page-header-text">
+        <h1>Quick Links</h1>
+        <p>Affinity team portals, tools and external resources — all in one place</p>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <div class="section-label">Government &amp; Regulatory</div>
+      <div class="links-grid">
+        <a class="link-card" href="https://onlineservices.ato.gov.au/OnlineServices/" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">🏛️</div>ATO Portal <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">onlineservices.ato.gov.au</div>
+        </a>
+        <a class="link-card" href="http://abr.business.gov.au/AdvancedSearch.aspx" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">🔎</div>ABR Lookup <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">abr.business.gov.au</div>
+        </a>
+        <a class="link-card" href="https://taxagent.abr.gov.au/abrweb/HomeTAG.abr?IdentityProvider=MyGovId_Beta" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">📋</div>ABR Tax Agent Services <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">taxagent.abr.gov.au</div>
+          <div class="link-card-note">u/n: lodgements@affinity.com.au</div>
+        </a>
+        <a class="link-card" href="https://connectonline.asic.gov.au/RegistrySearch/faces/landing/SearchRegisters.jspx" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">🏢</div>ASIC Search <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">connectonline.asic.gov.au</div>
+        </a>
+      </div>
+
+      <div class="section-label">Practice Management</div>
+      <div class="links-grid">
+        <a class="link-card" href="https://login.atomate.com.au/login" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">⚙️</div>Atomate <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">login.atomate.com.au</div>
+        </a>
+        <a class="link-card" href="https://leapstrategies.com.au/" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">📊</div>LEAP <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">leapstrategies.com.au</div>
+        </a>
+        <a class="link-card" href="https://cas360.com/s/html/main.html#/companyselection" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">🗂️</div>CAS360 <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">cas360.com</div>
+        </a>
+        <a class="link-card" href="https://practicemanager.xero.com/" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">📁</div>XPM <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">practicemanager.xero.com</div>
+        </a>
+        <a class="link-card" href="http://app.fyidocs.com" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">📄</div>FYIDocs <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">app.fyidocs.com</div>
+        </a>
+        <a class="link-card" href="https://documentcloud.adobe.com" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">✍️</div>Adobe E-Sign <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">documentcloud.adobe.com</div>
+        </a>
+        <a class="link-card" href="https://www.hightail.com/" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">📦</div>Hightail <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">hightail.com</div>
+          <div class="link-card-note">u/n: wh@affinityaccountants.com.au</div>
+        </a>
+        <a class="link-card" href="https://login.microsoftonline.com/" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">💼</div>Office 365 <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">login.microsoftonline.com</div>
+        </a>
+      </div>
+
+      <div class="section-label">Accounting &amp; Bookkeeping</div>
+      <div class="links-grid">
+        <a class="link-card" href="https://login.xero.com/" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">🟦</div>Xero <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">login.xero.com</div>
+        </a>
+        <a class="link-card" href="http://my.myob.com.au" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">📗</div>MYOB Knowledge Base <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">my.myob.com.au</div>
+        </a>
+        <a class="link-card" href="https://app.class.com.au/my/login" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">🏦</div>Class Super <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">app.class.com.au</div>
+        </a>
+        <a class="link-card" href="http://adviser.class.com.au" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">🎯</div>Class Advisor <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">adviser.class.com.au</div>
+        </a>
+        <a class="link-card" href="https://momentumdoctors.etani.au/" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">🩺</div>Momentum Doctors <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">momentumdoctors.etani.au</div>
+        </a>
+      </div>
+
+      <div class="section-label">Reporting &amp; Analytics</div>
+      <div class="links-grid">
+        <a class="link-card" href="https://syftanalytics.com/" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">📈</div>Syft Analytics <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">syftanalytics.com</div>
+        </a>
+        <a class="link-card" href="http://www.fathomhq.com/" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">📉</div>Fathom <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">fathomhq.com</div>
+        </a>
+        <a class="link-card" href="http://www.myprosperity.com.au" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">💰</div>My Prosperity <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">myprosperity.com.au</div>
+        </a>
+        <a class="link-card" href="http://www.lucidchart.com" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">🗺️</div>Lucidchart <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">lucidchart.com</div>
+          <div class="link-card-note">u/n: wh@affinityaccountants.com.au</div>
+        </a>
+      </div>
+
+      <div class="section-label">Finance &amp; Calculators</div>
+      <div class="links-grid">
+        <a class="link-card" href="https://www.moneysmart.gov.au/tools-and-resources/calculators-and-apps/mortgage-calculator#!how-much-will-my-repayments-be" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">🏠</div>Mortgage Calculator <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">moneysmart.gov.au</div>
+        </a>
+        <a class="link-card" href="https://www.esanda.com/personal/car-finance/car-loan-repayment-calculator/" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">🚗</div>HP Calculator <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">esanda.com</div>
+          <div class="link-card-note">u/n: Affinity1</div>
+        </a>
+        <a class="link-card" href="http://www.taxcalc.com.au/" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">🧮</div>Tax Calculator <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">taxcalc.com.au</div>
+        </a>
+      </div>
+
+      <div class="section-label">Other</div>
+      <div class="links-grid">
+        <a class="link-card" href="http://my.myob.com.au" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">🔗</div>InfoTrack <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">my.myob.com.au</div>
+        </a>
+        <a class="link-card" href="https://affinityaccountants.lifeworks.com/" target="_blank" rel="noopener">
+          <div class="link-card-name"><div class="link-icon">❤️</div>Telus Health One <span class="ext-icon">↗</span></div>
+          <div class="link-card-url">affinityaccountants.lifeworks.com</div>
+          <div class="link-card-note">Formerly Benestar Group</div>
+        </a>
+      </div>
+
+      <div class="disclaimer" style="margin-top:28px">
+        Links open in a new tab. Credentials shown are for team reference only — do not share externally.
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="../assets/affinity.js"></script>
+</body>
+</html>

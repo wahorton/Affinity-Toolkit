@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMSF Pension Drawdown — Affinity</title>
+<link rel="stylesheet" href="../assets/affinity.css">
+<style>
+.member-row {
+  background: var(--navy);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 12px;
+  position: relative;
+}
+.member-row .member-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--blue-light);
+  margin-bottom: 10px;
+  letter-spacing: 0.04em;
+}
+.member-row .remove-btn {
+  position: absolute;
+  top: 10px; right: 10px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 2px 6px;
+}
+.member-row .remove-btn:hover { color: var(--danger); }
+.add-member-btn {
+  width: 100%;
+  padding: 10px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.add-member-btn:hover { border-color: var(--blue-bright); color: var(--blue-light); }
+</style>
+</head>
+<body>
+<script src="../assets/sidebar.js"></script>
+<script>injectSidebar('smsf-pension.html');</script>
+<div class="layout"><div class="main">
+<div class="page-header">
+  <div class="page-header-icon">🏦</div>
+  <div class="page-header-text">
+    <h1>SMSF Pension Minimum Drawdown</h1>
+    <p>Calculate minimum annual pension payment for each member. Supports multiple members, pro-rata, and COVID relief rates.</p>
+  </div>
+  <div style="margin-left:auto"><button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Print / PDF</button></div>
+</div>
+<div class="page-body">
+<div class="tool-layout">
+  <div>
+    <div class="card">
+      <div class="card-title">Fund &amp; Year Details</div>
+      <div class="form-group"><label>SMSF Name <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label><input type="text" id="fundName" placeholder="e.g. Smith Super Fund"></div>
+      <div class="form-group">
+        <label>Income Year <span class="required">*</span></label>
+        <select id="year" onchange="calc()">
+          <option value="2026" selected>2025–26</option>
+          <option value="2025">2024–25</option>
+          <option value="2024">2023–24</option>
+          <option value="2023">2022–23</option>
+          <option value="2022">2021–22</option>
+          <option value="2021">2020–21</option>
+          <option value="2020">2019–20</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Pension Balance Date</label>
+        <select id="balanceDate" onchange="calc()">
+          <option value="1jul">1 July (standard commencement)</option>
+          <option value="prorata">Mid-year commencement (pro-rata)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Members</div>
+      <div id="membersContainer"></div>
+      <button class="add-member-btn" onclick="addMember()">+ Add Another Member</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Minimum Drawdown Rate Reference</div>
+      <table class="data-table">
+        <thead><tr><th>Age</th><th>Standard Rate</th><th>COVID Rate (21/22)</th></tr></thead>
+        <tbody>
+          <tr><td>Under 65</td><td>4%</td><td>2%</td></tr>
+          <tr><td>65–74</td><td>5%</td><td>2.5%</td></tr>
+          <tr><td>75–79</td><td>6%</td><td>3%</td></tr>
+          <tr><td>80–84</td><td>7%</td><td>3.5%</td></tr>
+          <tr><td>85–89</td><td>9%</td><td>4.5%</td></tr>
+          <tr><td>90–94</td><td>11%</td><td>5.5%</td></tr>
+          <tr><td>95+</td><td>14%</td><td>7%</td></tr>
+        </tbody>
+      </table>
+      <div class="form-hint" style="margin-top:8px">
+        COVID-reduced rates (50% reduction) applied 2019–20 through 2022–23. Standard rates apply from 2023–24 onwards.
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-title">Results by Member</div>
+      <div id="resultsContainer">
+        <div class="empty-state"><div class="icon">🏦</div><p>Add members and enter their details to calculate minimum pension payments.</p></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Fund Total</div>
+      <div class="result-box">
+        <div class="result-row"><span class="result-label">Total Fund Assets (all members)</span><span class="result-value" id="r_totalAssets">—</span></div>
+        <div class="result-row"><span class="result-label">Total Minimum Pension (all members)</span><span class="result-value highlight" id="r_totalMin">—</span></div>
+        <div class="result-row"><span class="result-label">% of Fund to be Distributed</span><span class="result-value" id="r_pct">—</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Key Pension Rules</div>
+      <div class="alert alert-warning">
+        <strong>Failure to meet minimum pension:</strong> The pension is taken to have never been a pension. All earnings for the year are taxable at 15% (not exempt). The ATO may grant Commissioner's discretion in limited circumstances.
+      </div>
+      <ul class="step-list">
+        <li>Minimum must be met by 30 June each year (or the pension is deemed to have failed).</li>
+        <li>For new pensions commenced mid-year, the minimum is pro-rated based on days remaining in the financial year ÷ 365.</li>
+        <li>Account balance for minimum calculation is the balance at 1 July (or at commencement for new pensions).</li>
+        <li>Market-linked pensions (MLPs) have different rules — not calculated here.</li>
+        <li>Age as at 1 July of the income year is used to determine the drawdown rate.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="disclaimer">This tool calculates minimum pension drawdown for account-based pensions under ITAR 1997 Schedule 7. It does not apply to defined benefit pensions, transition-to-retirement pensions (different rules), or market-linked pensions. Always verify balances and ages before advising clients.</div>
+</div></div></div>
+
+<script src="../assets/affinity.js"></script>
+<script>
+let memberCount = 0;
+
+const RATES = {
+  standard: [
+    {minAge: 0,  maxAge: 65, rate: 0.04},
+    {minAge: 65, maxAge: 75, rate: 0.05},
+    {minAge: 75, maxAge: 80, rate: 0.06},
+    {minAge: 80, maxAge: 85, rate: 0.07},
+    {minAge: 85, maxAge: 90, rate: 0.09},
+    {minAge: 90, maxAge: 95, rate: 0.11},
+    {minAge: 95, maxAge: 999, rate: 0.14},
+  ],
+  covid: [
+    {minAge: 0,  maxAge: 65, rate: 0.02},
+    {minAge: 65, maxAge: 75, rate: 0.025},
+    {minAge: 75, maxAge: 80, rate: 0.03},
+    {minAge: 80, maxAge: 85, rate: 0.035},
+    {minAge: 85, maxAge: 90, rate: 0.045},
+    {minAge: 90, maxAge: 95, rate: 0.055},
+    {minAge: 95, maxAge: 999, rate: 0.07},
+  ]
+};
+
+function getRate(age, year) {
+  const useCovid = [2020,2021,2022,2023].includes(year);
+  const table = useCovid ? RATES.covid : RATES.standard;
+  const r = table.find(r => age >= r.minAge && age < r.maxAge);
+  return r ? r.rate : 0.14;
+}
+
+function addMember() {
+  memberCount++;
+  const id = memberCount;
+  const div = document.createElement('div');
+  div.className = 'member-row';
+  div.id = 'member_' + id;
+  div.innerHTML = `
+    <div class="member-title">Member ${id}</div>
+    ${id > 1 ? `<button class="remove-btn" onclick="removeMember(${id})">✕</button>` : ''}
+    <div class="form-group" style="margin-bottom:8px">
+      <label>Name (optional)</label>
+      <input type="text" id="m_name_${id}" placeholder="e.g. John Smith" oninput="calc()">
+    </div>
+    <div class="form-group" style="margin-bottom:8px">
+      <label>Age at 1 July <span class="required">*</span></label>
+      <input type="number" id="m_age_${id}" placeholder="e.g. 68" min="55" max="110" oninput="calc()">
+    </div>
+    <div class="form-group" style="margin-bottom:8px">
+      <label>Pension Account Balance ($) <span class="required">*</span></label>
+      <div class="input-prefix"><span>$</span><input type="number" id="m_balance_${id}" placeholder="0" oninput="calc()"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:0">
+      <label>Pension Phase</label>
+      <select id="m_phase_${id}" onchange="calc()">
+        <option value="pension">Account-based pension (retirement phase)</option>
+        <option value="ttr">Transition to retirement (TTR)</option>
+        <option value="accum">Accumulation — no minimum applies</option>
+      </select>
+    </div>
+  `;
+  document.getElementById('membersContainer').appendChild(div);
+  calc();
+}
+
+function removeMember(id) {
+  const el = document.getElementById('member_' + id);
+  if (el) el.remove();
+  calc();
+}
+
+function calc() {
+  const year = pi(document.getElementById('year').value);
+  const balDateMode = document.getElementById('balanceDate').value;
+  const rows = document.querySelectorAll('.member-row');
+  let totalAssets = 0, totalMin = 0;
+  let resultHtml = '';
+
+  rows.forEach(row => {
+    const id = row.id.split('_')[1];
+    const name = (document.getElementById('m_name_' + id) ? document.getElementById('m_name_' + id).value : '') || ('Member ' + id);
+    const age = pi(document.getElementById('m_age_' + id) ? document.getElementById('m_age_' + id).value : 0);
+    const balance = pf(document.getElementById('m_balance_' + id) ? document.getElementById('m_balance_' + id).value : 0);
+    const phase = document.getElementById('m_phase_' + id) ? document.getElementById('m_phase_' + id).value : 'pension';
+
+    if (!balance) return;
+    totalAssets += balance;
+
+    if (phase === 'accum') {
+      resultHtml += `<div class="result-box" style="margin-bottom:12px">
+        <div class="result-row"><span class="result-label" style="font-weight:700;color:var(--white)">${name}</span><span class="badge badge-neutral">Accumulation</span></div>
+        <div class="result-row"><span class="result-label">Balance</span><span class="result-value">${fmt(balance)}</span></div>
+        <div class="result-row"><span class="result-label">Minimum Pension</span><span class="result-value">N/A — accumulation phase</span></div>
+      </div>`;
+      return;
+    }
+
+    const rate = getRate(age, year);
+    const proRata = balDateMode === 'prorata';
+    // For simplicity, assume mid-year = 50% pro-rata (user would adjust)
+    const minPension = balance * rate * (proRata ? 0.5 : 1);
+    totalMin += minPension;
+
+    const isTTR = phase === 'ttr';
+    const maxTTR = balance * 0.10;
+
+    resultHtml += `<div class="result-box" style="margin-bottom:12px">
+      <div class="result-row"><span class="result-label" style="font-weight:700;color:var(--white)">${name}</span><span class="badge ${isTTR ? 'badge-warning' : 'badge-success'}">${isTTR ? 'TTR' : 'Pension'}</span></div>
+      <div class="result-row"><span class="result-label">Age</span><span class="result-value">${age}</span></div>
+      <div class="result-row"><span class="result-label">Account Balance</span><span class="result-value">${fmt(balance)}</span></div>
+      <div class="result-row"><span class="result-label">Drawdown Rate</span><span class="result-value">${fmtP(rate*100,2)}</span></div>
+      <div class="result-row"><span class="result-label">Minimum Annual Pension</span><span class="result-value highlight">${fmt(minPension)}</span></div>
+      ${isTTR ? `<div class="result-row"><span class="result-label">TTR Maximum (10%)</span><span class="result-value warning">${fmt(maxTTR)}</span></div>` : ''}
+      ${proRata ? `<div class="result-row"><span class="result-label">Pro-Rata Applied</span><span class="result-value">50% — mid-year commencement estimate</span></div>` : ''}
+    </div>`;
+  });
+
+  document.getElementById('resultsContainer').innerHTML = resultHtml || '<div class="empty-state"><div class="icon">🏦</div><p>Add member details to calculate minimum pension payments.</p></div>';
+  document.getElementById('r_totalAssets').textContent = fmt(totalAssets);
+  document.getElementById('r_totalMin').textContent = fmt(totalMin);
+  document.getElementById('r_pct').textContent = totalAssets > 0 ? fmtP(totalMin/totalAssets*100) : '—';
+}
+
+document.addEventListener('DOMContentLoaded', function() { addMember(); });
+</script>
+</body></html>

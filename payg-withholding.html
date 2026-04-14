@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Individual Tax Calculator — Affinity</title>
+<link rel="stylesheet" href="../assets/affinity.css">
+</head>
+<body>
+<script src="../assets/sidebar.js"></script>
+<script>injectSidebar('👤.html');</script>
+<div class="layout">
+  <div class="main">
+    <div class="page-header">
+      <div class="page-header-icon">👤</div>
+      <div class="page-header-text">
+        <h1>Individual Tax Calculator</h1>
+        <p>Calculate income tax, Medicare levy, offsets and after-tax income for Australian residents.</p>
+      </div>
+      <div style="margin-left:auto" class="btn-group">
+        
+        <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Print / PDF</button>
+      </div>
+    </div>
+    <div class="page-body">
+<div class="tool-layout">
+  <div class="card">
+    <div class="card-title">Income Details</div>
+    <div class="form-group">
+      <label>Income Year <span class="required">*</span></label>
+      <select id="year" onchange="calc()">
+        <option value="2026">2025–26</option>
+        <option value="2025">2024–25</option>
+        <option value="2024">2023–24</option>
+        <option value="2023">2022–23</option>
+        <option value="2022">2021–22</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Taxable Income ($) <span class="required">*</span></label>
+      <div class="input-prefix"><span>$</span><input type="number" id="income" placeholder="0" oninput="calc()"></div>
+    </div>
+    <div class="form-group">
+      <label>Resident for Tax Purposes?</label>
+      <select id="resident" onchange="calc()">
+        <option value="yes">Yes — Australian resident</option>
+        <option value="no">No — Non-resident</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Private Health Insurance (hospital cover)?</label>
+      <select id="phi" onchange="calc()">
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>HELP / HECS Debt?</label>
+      <select id="help" onchange="calc()">
+        <option value="no">No</option>
+        <option value="yes">Yes</option>
+      </select>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <div class="card-title">Summary</div>
+      <div class="result-box">
+        <div class="result-row"><span class="result-label">Gross Tax</span><span class="result-value" id="rGross">—</span></div>
+        <div class="result-row"><span class="result-label">LITO</span><span class="result-value positive" id="rLITO">—</span></div>
+        <div class="result-row"><span class="result-label">Medicare Levy</span><span class="result-value" id="rMedicare">—</span></div>
+        <div class="result-row"><span class="result-label">Medicare Levy Surcharge</span><span class="result-value" id="rMLS">—</span></div>
+        <div class="result-row"><span class="result-label">HELP Repayment</span><span class="result-value" id="rHELP">—</span></div>
+        <div class="result-row"><span class="result-label">Total Tax + Levies</span><span class="result-value negative" id="rTotal">—</span></div>
+        <div class="result-row"><span class="result-label">After-Tax Income</span><span class="result-value highlight" id="rAfter">—</span></div>
+        <div class="result-row"><span class="result-label">Effective Tax Rate</span><span class="result-value" id="rEffective">—</span></div>
+        <div class="result-row"><span class="result-label">Marginal Rate</span><span class="result-value" id="rMarginal">—</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+      <div class="disclaimer">Calculations based on ATO resident individual rates including LITO where applicable. Medicare Levy Surcharge thresholds are indicative only. HELP/HECS repayment amounts are estimates. Always verify with the ATO.</div>
+    </div>
+  </div>
+</div>
+<script src="../assets/affinity.js"></script>
+<script>
+
+// Tax brackets [threshold, rate] resident 2025-26
+const BRACKETS = {
+  2026: [[0,0],[18200,0.19],[45000,0.325],[135000,0.37],[190000,0.45]],
+  2025: [[0,0],[18200,0.19],[45000,0.325],[120000,0.37],[180000,0.45]],
+  2024: [[0,0],[18200,0.19],[45000,0.325],[120000,0.37],[180000,0.45]],
+  2023: [[0,0],[18200,0.19],[45000,0.325],[120000,0.37],[180000,0.45]],
+  2022: [[0,0],[18200,0.19],[45000,0.325],[120000,0.37],[180000,0.45]]
+};
+// Non-resident brackets 2025-26
+const NR_BRACKETS = {
+  2026: [[0,0.325],[135000,0.37],[190000,0.45]],
+  2025: [[0,0.325],[120000,0.37],[180000,0.45]]
+};
+
+function calcTax(income, brackets) {
+  let tax = 0;
+  for (let i = brackets.length-1; i >= 0; i--) {
+    const [thresh, rate] = brackets[i];
+    if (income > thresh) { tax = (income - thresh)*rate; income = thresh; }
+  }
+  return tax;
+}
+
+function litoCalc(income, year) {
+  // 2025-26: max $700, phases out $37500-$45000, gone at $66667 (post Stage 3)
+  // Simplified: max $700 at <=37500, phases out to 45000, then 0
+  if (income <= 37500) return 700;
+  if (income <= 45000) return 700 - ((income-37500) * 0.05);
+  if (income <= 66667) return 325 - ((income-45000) * 0.015);
+  return 0;
+}
+
+const HELP_RATES_2026 = [[67000,0],[70045,0.01],[80665,0.02],[93569,0.025],[103764,0.03],[119728,0.035],[127237,0.04],[135981,0.045],[142849,0.05],[151200,0.055],[159629,0.06],[167397,0.065],[176652,0.07],[185718,0.075],[195491,0.08],[205260,0.085],[215600,0.09],[226569,0.095],[238147,0.10]];
+
+function helpCalc(income) {
+  for (let i = HELP_RATES_2026.length-1; i >= 0; i--) {
+    if (income >= HELP_RATES_2026[i][0]) return income * HELP_RATES_2026[i][1];
+  }
+  return 0;
+}
+
+function calc() {
+  const year = +document.getElementById('year').value;
+  const income = pf(document.getElementById('income').value);
+  const resident = document.getElementById('resident').value === 'yes';
+  const phi = document.getElementById('phi').value === 'yes';
+  const helpDebt = document.getElementById('help').value === 'yes';
+  if (!income) return;
+  const brackets = BRACKETS[year] || BRACKETS[2026];
+  const grossTax = calcTax(income, brackets);
+  const lito = resident ? Math.max(0, litoCalc(income, year)) : 0;
+  const netTax = Math.max(0, grossTax - lito);
+  // Medicare levy 2% above shade-in threshold
+  let medicare = 0;
+  if (resident) {
+    const mlThresh = 26000;
+    if (income > mlThresh) medicare = income * 0.02;
+  }
+  // MLS
+  let mls = 0;
+  if (resident && !phi) {
+    if (income > 93000) mls = income * 0.015;
+    else if (income > 90000) mls = income * 0.01;
+    else if (income > 93000) mls = income * 0.01;
+  }
+  const helpRep = helpDebt ? helpCalc(income) : 0;
+  const total = netTax + medicare + mls + helpRep;
+  document.getElementById('rGross').textContent = fmt(grossTax);
+  document.getElementById('rLITO').textContent = lito > 0 ? '-' + fmt(lito) : '$0';
+  document.getElementById('rMedicare').textContent = fmt(medicare);
+  document.getElementById('rMLS').textContent = mls > 0 ? fmt(mls) : 'N/A';
+  document.getElementById('rHELP').textContent = helpRep > 0 ? fmt(helpRep) : 'N/A';
+  document.getElementById('rTotal').textContent = fmt(total);
+  document.getElementById('rAfter').textContent = fmt(income - total);
+  document.getElementById('rEffective').textContent = fmtP(income > 0 ? total/income*100 : 0);
+  // Marginal
+  const inc1 = income + 1;
+  const tax1 = calcTax(inc1, brackets) - lito + medicare/income*(inc1-income);
+  const marginalRate = Math.min(45, brackets.reduce((r,[t,rv]) => income > t ? rv*100 : r, 0));
+  document.getElementById('rMarginal').textContent = fmtP(marginalRate, 0);
+}
+
+document.addEventListener('DOMContentLoaded', calc);
+</script>
+</body>
+</html>

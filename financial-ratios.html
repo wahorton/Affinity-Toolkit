@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Depreciation Schedule — Affinity</title>
+<link rel="stylesheet" href="../assets/affinity.css">
+</head>
+<body>
+<script src="../assets/sidebar.js"></script>
+<script>injectSidebar('depreciation.html');</script>
+<div class="layout"><div class="main">
+<div class="page-header">
+  <div class="page-header-icon">📉</div>
+  <div class="page-header-text"><h1>Depreciation Schedule Builder</h1><p>Calculate diminishing value or prime cost depreciation for a single asset.</p></div>
+  <div style="margin-left:auto" class="btn-group">
+    <button class="btn btn-secondary btn-sm" onclick="exportCSV('scheduleTable','depreciation')">⬇ Export CSV</button>
+    <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Print / PDF</button>
+  </div>
+</div>
+<div class="page-body">
+<div class="tool-layout">
+  <div class="card">
+    <div class="card-title">Asset Details</div>
+    <div class="form-group"><label>Asset Description</label><input type="text" id="desc" placeholder="e.g. Vehicle, Plant Equipment"></div>
+    <div class="form-group"><label>Cost ($) <span class="required">*</span></label><div class="input-prefix"><span>$</span><input type="number" id="cost" placeholder="0" oninput="calc()"></div></div>
+    <div class="form-group"><label>Start Date (first used / installed) <span class="required">*</span></label><input type="date" id="startDate" oninput="calc()"></div>
+    <div class="form-group">
+      <label>Effective Life (years) <span class="required">*</span>
+        <span class="tooltip-wrap"><i class="tooltip-icon">i</i><span class="tooltip-text">Refer to ATO Tax Ruling TR 2024/1 for effective life tables.</span></span>
+      </label>
+      <input type="number" id="effLife" placeholder="e.g. 5" step="0.5" oninput="calc()">
+    </div>
+    <div class="form-group">
+      <label>Depreciation Method <span class="required">*</span></label>
+      <select id="method" onchange="calc()">
+        <option value="dv">Diminishing Value (DV)</option>
+        <option value="pc">Prime Cost (PC)</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Business Use % <span class="required">*</span></label><input type="number" id="bizUse" value="100" min="0" max="100" oninput="calc()"></div>
+    <div class="form-group">
+      <label>GST Adjustment</label>
+      <select id="gst" onchange="calc()">
+        <option value="no">No GST adjustment (cost ex-GST or no GST credit)</option>
+        <option value="yes">Reduce cost by GST component (1/11th)</option>
+      </select>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <div class="card-title">Summary</div>
+      <div class="result-box">
+        <div class="result-row"><span class="result-label">Depreciation Method</span><span class="result-value" id="rMethod">—</span></div>
+        <div class="result-row"><span class="result-label">DV / PC Rate</span><span class="result-value highlight" id="rRate">—</span></div>
+        <div class="result-row"><span class="result-label">Depreciable Cost</span><span class="result-value" id="rCost">—</span></div>
+        <div class="result-row"><span class="result-label">Year 1 Deduction</span><span class="result-value positive" id="rY1">—</span></div>
+        <div class="result-row"><span class="result-label">Final Year</span><span class="result-value" id="rFinal">—</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Depreciation Schedule</div>
+      <div class="table-wrapper">
+        <table class="data-table" id="scheduleTable">
+          <thead><tr><th>Income Year</th><th>Days Held</th><th>Opening ($)</th><th>Rate</th><th>Full Year Dep ($)</th><th>Tax Deduction ($)</th><th>Closing ($)</th></tr></thead>
+          <tbody id="schedBody"><tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px">Enter asset details to generate schedule</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="disclaimer">DV rate = 200% ÷ effective life (for assets acquired on or after 10 May 2006). Prime cost rate = 100% ÷ effective life. First year depreciation is pro-rated based on days from acquisition to 30 June. Small business entities may be eligible for simplified depreciation rules — consult the ATO.</div>
+</div></div></div>
+<script src="../assets/affinity.js"></script>
+<script>
+function calc() {
+  const costRaw = pf(document.getElementById('cost').value);
+  const startDateStr = document.getElementById('startDate').value;
+  const effLife = pf(document.getElementById('effLife').value);
+  const method = document.getElementById('method').value;
+  const bizUse = pf(document.getElementById('bizUse').value) / 100;
+  const gstAdj = document.getElementById('gst').value === 'yes';
+  if (!costRaw || !effLife || !startDateStr) return;
+  const cost = gstAdj ? costRaw / 1.1 : costRaw;
+  const rate = method === 'dv' ? 2/effLife : 1/effLife;
+  document.getElementById('rMethod').textContent = method === 'dv' ? 'Diminishing Value' : 'Prime Cost';
+  document.getElementById('rRate').textContent = fmtP(rate*100) + ' p.a.';
+  document.getElementById('rCost').textContent = fmt(cost * bizUse);
+  
+  const startDate = new Date(startDateStr);
+  let tbody = ''; let balance = cost; let totalDep = 0; let finalYear = '';
+  for (let y = startDate.getFullYear(); y <= startDate.getFullYear() + Math.ceil(effLife) + 2 && balance > 1; y++) {
+    const yearStart = new Date(y, 6, 1); // 1 July
+    const yearEnd = new Date(y+1, 5, 30); // 30 June
+    const actualStart = startDate > yearStart ? startDate : yearStart;
+    const daysInYear = 365;
+    const daysHeld = Math.min(daysInYear, Math.round((yearEnd - actualStart) / 86400000) + 1);
+    const fullYearDep = method === 'dv' ? balance * rate : cost * rate;
+    const proratedDep = fullYearDep * (daysHeld / daysInYear);
+    const deduction = Math.min(proratedDep * bizUse, balance * bizUse);
+    totalDep += deduction;
+    const closing = Math.max(0, balance - proratedDep);
+    const label_y = y + '–' + String(y+1).slice(-2);
+    tbody += `<tr><td>${label_y}</td><td>${daysHeld}</td><td>${fmt(balance)}</td><td>${fmtP(rate*100)}</td><td>${fmt(fullYearDep * (daysHeld/daysInYear))}</td><td class="highlight">${fmt(deduction)}</td><td>${fmt(closing < 1 ? 0 : closing)}</td></tr>`;
+    if (closing < 1) { finalYear = label_y; balance = 0; break; }
+    balance = closing;
+  }
+  if (tbody) {
+    const firstMatch = tbody.match(/highlight">\\$([\d,.]+)/);
+    document.getElementById('rY1').textContent = firstMatch ? '$' + firstMatch[1] : '—';
+  }
+  document.getElementById('rFinal').textContent = finalYear || 'Ongoing';
+  document.getElementById('schedBody').innerHTML = tbody;
+}
+document.addEventListener('DOMContentLoaded', () => { document.getElementById('startDate').value = new Date().toISOString().split('T')[0]; });
+</script>
+</body></html>

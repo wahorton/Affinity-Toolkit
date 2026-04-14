@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hire Purchase Calculator — Affinity</title>
+<link rel="stylesheet" href="../assets/affinity.css">
+</head>
+<body>
+<script src="../assets/sidebar.js"></script>
+<script>injectSidebar('hire-purchase.html');</script>
+<div class="layout"><div class="main">
+<div class="page-header">
+  <div class="page-header-icon">🔑</div>
+  <div class="page-header-text">
+    <h1>Hire Purchase Calculator</h1>
+    <p>Generate a full HP repayment schedule with interest allocation, business use percentage and tax treatment summary.</p>
+  </div>
+  <div style="margin-left:auto" class="btn-group">
+    <button class="btn btn-secondary btn-sm" onclick="exportCSV('scheduleTable','hp-schedule')">⬇ Export CSV</button>
+    <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Print / PDF</button>
+  </div>
+</div>
+<div class="page-body">
+<div class="tool-layout">
+  <div>
+    <div class="card">
+      <div class="card-title">HP Agreement Details</div>
+      <div class="form-group"><label>Asset Description</label><input type="text" id="assetDesc" placeholder="e.g. 2024 Ford Ranger"></div>
+      <div class="form-group"><label>Purchase Price (inc. GST) ($) <span class="required">*</span></label><div class="input-prefix"><span>$</span><input type="number" id="price" placeholder="0" oninput="calc()"></div></div>
+      <div class="form-group"><label>Deposit / Trade-In ($)</label><div class="input-prefix"><span>$</span><input type="number" id="deposit" placeholder="0" oninput="calc()"></div></div>
+      <div class="form-group"><label>Residual / Balloon ($)</label><div class="input-prefix"><span>$</span><input type="number" id="balloon" placeholder="0" oninput="calc()"></div></div>
+      <div class="form-group"><label>Annual Interest Rate (%) <span class="required">*</span></label><input type="number" id="rate" placeholder="e.g. 6.5" step="0.01" oninput="calc()"></div>
+      <div class="form-group">
+        <label>Loan Term (months) <span class="required">*</span></label>
+        <select id="term" onchange="calc()">
+          <option value="12">12 months</option>
+          <option value="24">24 months</option>
+          <option value="36">36 months</option>
+          <option value="48">48 months</option>
+          <option value="60" selected>60 months</option>
+          <option value="72">72 months</option>
+          <option value="84">84 months</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Payment Frequency</label>
+        <select id="freq" onchange="calc()">
+          <option value="12" selected>Monthly</option>
+          <option value="26">Fortnightly</option>
+          <option value="52">Weekly</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Start Date</label><input type="date" id="startDate" data-today oninput="calc()"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Tax &amp; Business Use</div>
+      <div class="form-group"><label>Business Use (%) <span class="required">*</span></label><input type="number" id="bizUse" value="100" min="0" max="100" oninput="calc()"></div>
+      <div class="form-group">
+        <label>GST Treatment</label>
+        <select id="gstTreat" onchange="calc()">
+          <option value="registered">GST registered — claim full GST upfront (Div 65)</option>
+          <option value="unregistered">Not GST registered</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-title">HP Summary</div>
+      <div class="result-box">
+        <div class="result-row"><span class="result-label">Net Amount Financed</span><span class="result-value" id="r_financed">—</span></div>
+        <div class="result-row"><span class="result-label">Regular Payment</span><span class="result-value highlight" id="r_payment">—</span></div>
+        <div class="result-row"><span class="result-label">Total Repayments</span><span class="result-value" id="r_total">—</span></div>
+        <div class="result-row"><span class="result-label">Total Interest</span><span class="result-value negative" id="r_interest">—</span></div>
+        <div class="result-row"><span class="result-label">GST Claimable (upfront)</span><span class="result-value positive" id="r_gst">—</span></div>
+        <div class="result-row"><span class="result-label">Deductible Interest (Business Use)</span><span class="result-value positive" id="r_deductInterest">—</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Tax Treatment Reference</div>
+      <table class="data-table">
+        <thead><tr><th>Item</th><th>Treatment</th></tr></thead>
+        <tbody>
+          <tr><td class="text">GST (if registered)</td><td class="text positive">Full GST credit claimed in first period (Div 65)</td></tr>
+          <tr><td class="text">Interest component</td><td class="text">Deductible in period incurred (business use %)</td></tr>
+          <tr><td class="text">Principal repayments</td><td class="text">Not deductible — balance sheet treatment</td></tr>
+          <tr><td class="text">Asset cost (for depreciation)</td><td class="text">Full price less deposit + GST (if registered). Depreciate via DV or PC method.</td></tr>
+          <tr><td class="text">GST on interest</td><td class="text">None — financial supply (input taxed)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">HP Repayment Schedule</div>
+      <div class="table-wrapper">
+        <table class="data-table" id="scheduleTable">
+          <thead><tr><th>#</th><th>Date</th><th>Opening ($)</th><th>Payment ($)</th><th>Interest ($)</th><th>Principal ($)</th><th>Biz Interest ($)</th><th>Closing ($)</th></tr></thead>
+          <tbody id="schedBody"><tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px">Enter HP details to generate schedule</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="disclaimer">HP calculations use reducing-balance interest. Interest is deductible to the extent of business use in the income year it is incurred. The asset is treated as owned from commencement for depreciation purposes. Verify GST treatment with your BAS adviser — Div 65 upfront credit applies only if registered and the asset is a creditable acquisition.</div>
+</div></div></div>
+
+<script src="../assets/affinity.js"></script>
+<script>
+function calc() {
+  const price = pf(document.getElementById('price').value);
+  const deposit = pf(document.getElementById('deposit').value);
+  const balloon = pf(document.getElementById('balloon').value);
+  const annualRate = pf(document.getElementById('rate').value) / 100;
+  const termMonths = pi(document.getElementById('term').value);
+  const freqPerYear = pi(document.getElementById('freq').value);
+  const bizUse = pf(document.getElementById('bizUse').value) / 100;
+  const gstTreat = document.getElementById('gstTreat').value;
+  const startDateStr = document.getElementById('startDate').value;
+  if (!price || !annualRate || !termMonths) return;
+
+  const gstComponent = gstTreat === 'registered' ? price / 11 : 0;
+  const financed = price - deposit - balloon / Math.pow(1 + annualRate / freqPerYear, termMonths * freqPerYear / 12);
+  const principal = price - deposit;
+  const ratePerPeriod = annualRate / freqPerYear;
+  const totalPeriods = Math.round(termMonths * freqPerYear / 12);
+  const pv = principal - balloon / Math.pow(1 + ratePerPeriod, totalPeriods);
+  const payment = pv * ratePerPeriod / (1 - Math.pow(1 + ratePerPeriod, -totalPeriods));
+
+  document.getElementById('r_financed').textContent = fmt(principal);
+  document.getElementById('r_payment').textContent = fmt(payment);
+  document.getElementById('r_gst').textContent = gstComponent > 0 ? fmt(gstComponent) : 'N/A';
+
+  let balance = principal, totalInt = 0, totalIntBiz = 0, tbody = '';
+  const daysPerPeriod = {12:30,26:14,52:7}[freqPerYear] || 30;
+  let curDate = startDateStr ? new Date(startDateStr) : new Date();
+
+  for (let i = 1; i <= totalPeriods; i++) {
+    const interest = balance * ratePerPeriod;
+    const isLast = i === totalPeriods;
+    const pmt = isLast ? balance - balloon + interest : payment;
+    const principalPmt = pmt - interest;
+    totalInt += interest;
+    const bizInterest = interest * bizUse;
+    totalIntBiz += bizInterest;
+    const closing = isLast ? balloon : Math.max(0, balance - principalPmt);
+    const dateStr = curDate.toLocaleDateString('en-AU', {day:'numeric',month:'short',year:'numeric'});
+    tbody += `<tr><td>${i}</td><td class="text">${dateStr}</td><td>${fmt(balance)}</td><td>${fmt(pmt)}</td><td>${fmt(interest)}</td><td>${fmt(principalPmt)}</td><td class="positive">${fmt(bizInterest)}</td><td>${fmt(closing)}</td></tr>`;
+    balance = closing;
+    curDate = new Date(curDate.getTime() + daysPerPeriod * 86400000);
+  }
+
+  const totalRepaid = payment * (totalPeriods - 1) + (balance + balloon);
+  document.getElementById('r_total').textContent = fmt(payment * totalPeriods + balloon);
+  document.getElementById('r_interest').textContent = fmt(totalInt);
+  document.getElementById('r_deductInterest').textContent = fmt(totalIntBiz) + ' (' + fmtP(bizUse * 100, 0) + ' of ' + fmt(totalInt) + ')';
+  document.getElementById('schedBody').innerHTML = tbody;
+}
+document.addEventListener('DOMContentLoaded', calc);
+</script>
+</body></html>

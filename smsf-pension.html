@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PAYG Withholding — Affinity</title>
+<link rel="stylesheet" href="../assets/affinity.css">
+</head>
+<body>
+<script src="../assets/sidebar.js"></script>
+<script>injectSidebar('payg-withholding.html');</script>
+<div class="layout"><div class="main">
+<div class="page-header">
+  <div class="page-header-icon">💰</div>
+  <div class="page-header-text">
+    <h1>PAYG Withholding Calculator</h1>
+    <p>Estimate tax to withhold from salary and wages — resident employees, all pay cycles. ATO Schedule 1 2024–25.</p>
+  </div>
+  <div style="margin-left:auto"><button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Print / PDF</button></div>
+</div>
+<div class="page-body">
+<div class="tool-layout">
+  <div>
+    <div class="card">
+      <div class="card-title">Employee &amp; Payment Details</div>
+      <div class="form-group"><label>Employee Name <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label><input type="text" id="empName" placeholder="e.g. Jane Doe"></div>
+      <div class="form-group">
+        <label>Gross Earnings This Pay Period ($) <span class="required">*</span></label>
+        <div class="input-prefix"><span>$</span><input type="number" id="grossPay" placeholder="0" oninput="calc()"></div>
+      </div>
+      <div class="form-group">
+        <label>Pay Cycle <span class="required">*</span></label>
+        <select id="payCycle" onchange="calc()">
+          <option value="52">Weekly</option>
+          <option value="26">Fortnightly</option>
+          <option value="12" selected>Monthly</option>
+          <option value="1">Annually (lump sum)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tax Scale
+          <span class="tooltip-wrap"><i class="tooltip-icon">i</i><span class="tooltip-text">Scale 1: Resident standard. Scale 2: Resident SAPTO (seniors). Scale 3: Foreign resident. Scale 4: No TFN. Scale 6: Working holiday maker.</span></span>
+        </label>
+        <select id="scale" onchange="calc()">
+          <option value="1">Scale 1 — Resident (standard)</option>
+          <option value="2">Scale 2 — Resident with SAPTO (seniors/pensioners)</option>
+          <option value="3">Scale 3 — Foreign resident</option>
+          <option value="4">Scale 4 — No TFN quoted</option>
+          <option value="6">Scale 6 — Working holiday maker</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Claim Tax-Free Threshold?</label>
+        <select id="tfThreshold" onchange="calc()">
+          <option value="yes">Yes — claiming tax-free threshold</option>
+          <option value="no">No — not claiming</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>HELP / HECS Debt?</label>
+        <select id="helpDebt" onchange="calc()">
+          <option value="no">No</option>
+          <option value="yes">Yes</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Medicare Levy Exemption?</label>
+        <select id="mlExempt" onchange="calc()">
+          <option value="no">No exemption</option>
+          <option value="half">Half exemption</option>
+          <option value="full">Full exemption</option>
+        </select>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">2024–25 Resident Brackets</div>
+      <table class="data-table">
+        <thead><tr><th>Taxable Income</th><th>Rate</th></tr></thead>
+        <tbody>
+          <tr><td>$0 – $18,200</td><td class="positive">Nil</td></tr>
+          <tr><td>$18,201 – $45,000</td><td>19%</td></tr>
+          <tr><td>$45,001 – $135,000</td><td class="warning">32.5%</td></tr>
+          <tr><td>$135,001 – $190,000</td><td>37%</td></tr>
+          <tr><td>Over $190,000</td><td class="negative">45%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <div class="card-title">Withholding Result</div>
+      <div class="big-stat">
+        <div class="big-stat-label">Withhold This Period</div>
+        <div class="big-stat-value" id="rWithhold">$—</div>
+        <div class="big-stat-sub" id="rCycleLabel">—</div>
+      </div>
+      <div class="result-box" style="margin-top:16px">
+        <div class="result-row"><span class="result-label">Annualised Gross</span><span class="result-value" id="rAnnual">—</span></div>
+        <div class="result-row"><span class="result-label">Annualised Withholding</span><span class="result-value negative" id="rAnnualWith">—</span></div>
+        <div class="result-row"><span class="result-label">Effective Rate (annual)</span><span class="result-value" id="rEffRate">—</span></div>
+        <div class="result-row"><span class="result-label">Net Pay This Period</span><span class="result-value highlight" id="rNet">—</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Pay Cycle Comparison</div>
+      <table class="data-table">
+        <thead><tr><th>Cycle</th><th>Gross</th><th>Withholding</th><th>Net</th></tr></thead>
+        <tbody id="cycleBody"><tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px">Enter gross pay above</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div class="disclaimer">Withholding amounts are estimates based on ATO Schedule 1 (2024–25) methodology. Rounding to the nearest dollar is applied. For precise withholding including salary sacrifice, FBT or CDEP adjustments, use the ATO's Tax Withheld Calculator. HELP repayment thresholds are for 2024–25.</div>
+</div></div></div>
+<script src="../assets/affinity.js"></script>
+<script>
+function annualTax(income, scale, tft, mlExempt, help) {
+  if (scale === 4) return income * 0.47;
+  if (scale === 3) {
+    let t = income <= 135000 ? income*0.325 : income <= 190000 ? 135000*0.325+(income-135000)*0.37 : 135000*0.325+55000*0.37+(income-190000)*0.45;
+    return t;
+  }
+  if (scale === 6) {
+    let t = income <= 45000 ? income*0.15 : income <= 135000 ? 45000*0.15+(income-45000)*0.325 : income <= 190000 ? 45000*0.15+90000*0.325+(income-135000)*0.37 : 45000*0.15+90000*0.325+55000*0.37+(income-190000)*0.45;
+    return t + (income > 26000 ? income*0.02 : 0);
+  }
+  let t = 0;
+  if (tft === 'yes') {
+    if (income <= 18200) t = 0;
+    else if (income <= 45000) t = (income-18200)*0.19;
+    else if (income <= 135000) t = 26800*0.19+(income-45000)*0.325;
+    else if (income <= 190000) t = 26800*0.19+90000*0.325+(income-135000)*0.37;
+    else t = 26800*0.19+90000*0.325+55000*0.37+(income-190000)*0.45;
+    let lito = income <= 37500 ? 700 : income <= 45000 ? 700-(income-37500)*0.05 : income <= 66667 ? 325-(income-45000)*0.015 : 0;
+    t = Math.max(0, t - lito);
+  } else {
+    if (income <= 45000) t = income*0.19;
+    else if (income <= 135000) t = 45000*0.19+(income-45000)*0.325;
+    else if (income <= 190000) t = 45000*0.19+90000*0.325+(income-135000)*0.37;
+    else t = 45000*0.19+90000*0.325+55000*0.37+(income-190000)*0.45;
+  }
+  if (scale === 2) {
+    let sapto = income <= 32279 ? 2230 : income <= 50119 ? Math.max(0,2230-(income-32279)*0.125) : 0;
+    t = Math.max(0, t - sapto);
+  }
+  let ml = 0;
+  if (mlExempt !== 'full' && income > 26000) ml = income * 0.02 * (mlExempt === 'half' ? 0.5 : 1);
+  t += ml;
+  if (help === 'yes') {
+    const hr = [[67000,0.01],[80665,0.02],[93569,0.025],[103764,0.03],[119728,0.035],[127237,0.04],[135981,0.045],[142849,0.05],[151200,0.055],[159629,0.06],[176652,0.07],[195491,0.08],[238147,0.10]];
+    for (let i = hr.length-1; i >= 0; i--) { if (income >= hr[i][0]) { t += income*hr[i][1]; break; } }
+  }
+  return Math.max(0, t);
+}
+function periodWith(gross, freq, scale, tft, ml, help) {
+  return Math.round(annualTax(gross*freq, scale, tft, ml, help) / freq);
+}
+function calc() {
+  const gross = pf(document.getElementById('grossPay').value);
+  const freq = pi(document.getElementById('payCycle').value);
+  const scale = pi(document.getElementById('scale').value);
+  const tft = document.getElementById('tfThreshold').value;
+  const help = document.getElementById('helpDebt').value;
+  const ml = document.getElementById('mlExempt').value;
+  if (!gross) return;
+  const w = periodWith(gross, freq, scale, tft, ml, help);
+  const names = {52:'Weekly',26:'Fortnightly',12:'Monthly',1:'Annually'};
+  document.getElementById('rWithhold').textContent = fmt(w, 0);
+  document.getElementById('rCycleLabel').textContent = names[freq] + ' withholding';
+  document.getElementById('rAnnual').textContent = fmt(gross * freq);
+  document.getElementById('rAnnualWith').textContent = fmt(w * freq);
+  document.getElementById('rEffRate').textContent = fmtP(gross > 0 ? w/gross*100 : 0);
+  document.getElementById('rNet').textContent = fmt(gross - w);
+  const annual = gross * freq;
+  document.getElementById('cycleBody').innerHTML = [[52,'Weekly'],[26,'Fortnightly'],[12,'Monthly'],[1,'Annual']].map(([f,name]) => {
+    const pg = annual/f, pw = periodWith(pg, f, scale, tft, ml, help);
+    return `<tr${f===freq?' style="background:rgba(74,127,193,0.1)"':''}><td class="text">${name}${f===freq?' ✓':''}</td><td>${fmt(pg)}</td><td class="warning">${fmt(pw,0)}</td><td class="positive">${fmt(pg-pw)}</td></tr>`;
+  }).join('');
+}
+document.addEventListener('DOMContentLoaded', calc);
+</script>
+</body></html>
